@@ -1,89 +1,80 @@
 import { create } from 'zustand';
 import type { User } from '../types';
 import * as SS from 'expo-secure-store';
-
-const MOCK: User = {
-  id:'u1', name:'Alex Rivera', email:'alex@gymind.com', role:'User',
-  memberSince:'Jan 2023', tier:'Elite', workouts:248, hours:156,
-  phone: '5551234567',
-  membershipNumber: '100245',
-  age: 28,
-  heightCm: 178,
-  weightKg: 76,
-  avatarUrl: '',
-  biography: 'Focused on strength and conditioning.',
-  medicalConditions: '',
-  fitnessGoal: 'Build muscle and improve endurance',
-  trainingFrequencyPerWeek: 4,
-  assessmentNotes: 'Good baseline mobility. Improve hamstring flexibility.',
-};
-
-type ProfileUpdate = Pick<
-  User,
-  | 'name'
-  | 'heightCm'
-  | 'weightKg'
-  | 'biography'
-  | 'medicalConditions'
-  | 'fitnessGoal'
-  | 'trainingFrequencyPerWeek'
-  | 'assessmentNotes'
->;
+import { authApi } from '../screens/API/api'; // Import the authApi from your API module
 
 interface AuthStore {
   user: User | null;
+  token: string | null;
+  refreshToken: string | null;
   authed: boolean;
   loading: boolean;
   error: string;
   init: () => Promise<void>;
   login: (email: string, pass: string) => Promise<void>;
-  register: (name: string, email: string, pass: string) => Promise<void>;
+  setTokens: (token: string, refreshToken: string) => Promise<void>;
   logout: () => Promise<void>;
-  updateProfile: (payload: ProfileUpdate) => void;
-  updateAvatar: (avatarUrl: string) => void;
   clearErr: () => void;
 }
 
-export const useAuth = create<AuthStore>((set) => ({
-  user: null, authed: false, loading: false, error: '',
+export const useAuth = create<AuthStore>((set, get) => ({
+  user: null,
+  token: null,
+  refreshToken: null,
+  authed: false,
+  loading: false,
+  error: '',
 
   init: async () => {
     try {
       const t = await SS.getItemAsync('token');
-      if (t) set({ user: MOCK, authed: true });
-    } catch {}
+      const rt = await SS.getItemAsync('refreshToken');
+      // In a real app, you might call a /me endpoint here to get user details
+      if (t) set({ token: t, refreshToken: rt, authed: true });
+    } catch (err) {
+      console.error("Failed to initialize auth", err);
+    }
   },
 
   login: async (email, pass) => {
     set({ loading: true, error: '' });
-    await new Promise(r => setTimeout(r, 1000));
-    if (!email.includes('@') || pass.length < 6) {
-      set({ loading: false, error: 'Invalid credentials' });
-      throw new Error('Invalid credentials');
+    try {
+      // Calls the LoginAsync method in your UserService
+      const response = await authApi.login({ Email: email, Password: pass });
+      
+      // The backend returns a TokenExchangeRequestDto containing Token and RefreshToken
+      const { token: accessToken, refreshToken, roles } = response.token;
+
+      await SS.setItemAsync('token', accessToken);
+      await SS.setItemAsync('refreshToken', refreshToken);
+
+      set({ 
+        token: accessToken, 
+        refreshToken, 
+        authed: true, 
+        loading: false,
+        // Map the backend roles to your user object
+        user: { email, roles } as any 
+      });
+    } catch (err: any) {
+      // Captures the "Invalid credentials" or "Inactive" messages from AuthController
+      const errMsg = err.response?.data || 'Login failed';
+      set({ loading: false, error: errMsg });
+      throw new Error(errMsg);
     }
-    await SS.setItemAsync('token', 'tok_' + Date.now());
-    set({ user: MOCK, authed: true, loading: false });
   },
 
-  register: async (name, email) => {
-    set({ loading: true, error: '' });
-    await new Promise(r => setTimeout(r, 1200));
-    await SS.setItemAsync('token', 'tok_' + Date.now());
-    set({ user: { ...MOCK, name, email }, authed: true, loading: false });
+  setTokens: async (token, refreshToken) => {
+    await SS.setItemAsync('token', token);
+    await SS.setItemAsync('refreshToken', refreshToken);
+    set({ token, refreshToken });
   },
 
   logout: async () => {
     await SS.deleteItemAsync('token');
-    set({ user: null, authed: false });
+    await SS.deleteItemAsync('refreshToken');
+    set({ user: null, token: null, refreshToken: null, authed: false });
   },
-
-  updateProfile: (payload) => set((state) => (
-    state.user ? { user: { ...state.user, ...payload } } : state
-  )),
-
-  updateAvatar: (avatarUrl) => set((state) => (
-    state.user ? { user: { ...state.user, avatarUrl } } : state
-  )),
 
   clearErr: () => set({ error: '' }),
 }));
