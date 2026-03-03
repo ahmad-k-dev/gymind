@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "GymInd",
+    "slug": "gymind",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.gymind.app"
+    },
+    "android": {
+      "package": "com.gymind.app"
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-secure-store"
+    ]
+  }
+}
