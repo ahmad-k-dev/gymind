@@ -10,7 +10,7 @@ export interface LoginResponseDto {
 export interface CreateUserDto {
   fullName: string;
   email: string;
-  phone?: string;
+  phone: string;
   password: string;
   gender: string;
   location?: string;

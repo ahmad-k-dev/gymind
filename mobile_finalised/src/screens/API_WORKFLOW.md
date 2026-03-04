@@ -11,7 +11,7 @@ This document explains how the screens in `src/screens` consume backend APIs wit
 5. App routes to authenticated navigators.
 
 For registration:
-1. `register(name, email, password)` calls `POST /api/auth/register`.
+1. `register(payload)` sends the CreateUser DTO fields (`fullName`, `email`, `phone`, `password`, `gender`, optional `location`, optional `dateOfBirth`) to `POST /api/auth/register`.
 2. On success, login flow is executed to keep one source of truth for session bootstrap.
 
 ## 2) Home + Gym profile screens (`Home`, `GymProfile`)
