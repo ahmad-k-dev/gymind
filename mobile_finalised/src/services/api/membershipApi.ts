@@ -1,4 +1,4 @@
-import { apiClient } from './client';
+import { apiClient } from './api';
 import type { BackendMembershipSummaryDto } from './types';
 
 export async function getMyMembershipsApi(): Promise<BackendMembershipSummaryDto[]> {

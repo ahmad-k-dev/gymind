@@ -63,7 +63,8 @@ namespace GYMIND.API.Service
             {
                 Token = newAccessToken,
                 RefreshToken = newRefreshToken,
-                Roles = user.UserRole.Select(ur => ur.Role.Name).ToList()
+                Roles = user.UserRole.Select(ur => ur.Role.Name).ToList(),
+                UserID = user.UserID
             };
         }
 
@@ -91,7 +92,8 @@ namespace GYMIND.API.Service
             {
                 Token = accessToken,
                 RefreshToken = refreshToken, 
-                Roles = user.UserRole.Select(ur => ur.Role.Name).ToList()
+                Roles = user.UserRole.Select(ur => ur.Role.Name).ToList(),
+                UserID = user.UserID
             };
         }
 

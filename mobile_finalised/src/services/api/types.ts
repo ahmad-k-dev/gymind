@@ -1,20 +1,28 @@
 export interface LoginRequestDto {
-  email: string;
-  password: string;
-}
-
-export interface LoginResponseDto {
-  token: string;
+  Email: string;
+  Password: string;
 }
 
 export interface CreateUserDto {
-  fullName: string;
-  email: string;
-  phone: string;
-  password: string;
-  gender: string;
-  location?: string;
-  dateOfBirth?: string;
+  FullName: string;
+  Email: string;
+  Phone: string;
+  Password: string;
+  Gender: string;
+  Location?: string;
+  DateOfBirth?: string;
+}
+
+export interface TokenExchangeRequestDto {
+  Token: string;
+  RefreshToken: string;
+  Roles: string[];
+  UserID: string;
+}
+
+export interface RefreshTokenRequestDto {
+  Token: string;
+  RefreshToken: string;
 }
 
 export interface BackendGymDto {
@@ -49,4 +57,11 @@ export interface BackendMembershipSummaryDto {
   gymName: string;
   isActive: boolean;
   expiryDate?: string | null;
+}
+
+export interface BackendErrorResponse {
+  message?: string;
+  title?: string;
+  detail?: string;
+  errors?: Record<string, string[]>;
 }
