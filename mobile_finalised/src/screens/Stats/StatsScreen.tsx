@@ -8,11 +8,16 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../store/auth';
 import { F, R, S, useThemeColors } from '../../theme';
 import type { RootStack, TabStack } from '../../navigation/types';
-import { ATTENDANCE_LAST_30_DAYS, LINKED_GYM, WEEKLY_ACTIVITY } from '../../data/mockStats';
 import { StatsHeader } from './components/StatsHeader';
 import { WeeklyActivity } from './components/WeeklyActivity';
 import { Attendance30Days } from './components/Attendance30Days';
 import { LinkedGymCard } from './components/LinkedGymCard';
+import { getMyHistoryApi } from '../../services/api/sessionApi';
+import { getMyMembershipsApi } from '../../services/api/membershipApi';
+import { useGyms } from '../../store/gyms';
+import { buildComputedStats, mapLinkedGymFromMembership } from '../../services/api/mappers';
+import { ATTENDANCE_LAST_30_DAYS, LINKED_GYM, WEEKLY_ACTIVITY } from '../../data/mockStats';
+import type { AttendanceDay, LinkedGym, WeeklyActivityPoint } from '../../types/stats';
 
 type StatsNav = CompositeNavigationProp<
   BottomTabNavigationProp<TabStack, 'StatsTab'>,
@@ -48,6 +53,46 @@ export function StatsScreen() {
   const navigation = useNavigation<StatsNav>();
   const isFocused = useIsFocused();
   const user = useAuth((state) => state.user);
+  const gyms = useGyms((state) => state.gyms);
+  const fetchGyms = useGyms((state) => state.fetchGyms);
+
+  const [weeklyActivity, setWeeklyActivity] = React.useState<readonly WeeklyActivityPoint[]>(WEEKLY_ACTIVITY);
+  const [attendance30, setAttendance30] = React.useState<readonly AttendanceDay[]>(ATTENDANCE_LAST_30_DAYS);
+  const [linkedGym, setLinkedGym] = React.useState<LinkedGym>(LINKED_GYM);
+
+  React.useEffect(() => {
+    if (gyms.length === 0) {
+      void fetchGyms();
+    }
+  }, [fetchGyms, gyms.length]);
+
+  React.useEffect(() => {
+    let mounted = true;
+
+    async function hydrateStats() {
+      try {
+        const [history, memberships] = await Promise.all([getMyHistoryApi(), getMyMembershipsApi()]);
+        if (!mounted) return;
+
+        const computed = buildComputedStats(history);
+        setWeeklyActivity(computed.weeklyMinutes as readonly WeeklyActivityPoint[]);
+        setAttendance30(computed.attendanceLast30 as readonly AttendanceDay[]);
+
+        const mappedLinkedGym = mapLinkedGymFromMembership(memberships, gyms);
+        if (mappedLinkedGym) {
+          setLinkedGym(mappedLinkedGym);
+        }
+      } catch {
+        // Keep fallback view models to ensure the screen remains usable offline.
+      }
+    }
+
+    void hydrateStats();
+
+    return () => {
+      mounted = false;
+    };
+  }, [gyms]);
 
   const statTiles = React.useMemo<readonly StatTile[]>(
     () => [
@@ -62,8 +107,8 @@ export function StatsScreen() {
   }, [navigation]);
 
   const goToLinkedGym = React.useCallback(() => {
-    navigation.navigate('HomeTab', { screen: 'GymProfile', params: { gymId: LINKED_GYM.id } });
-  }, [navigation]);
+    navigation.navigate('HomeTab', { screen: 'GymProfile', params: { gymId: linkedGym.id } });
+  }, [linkedGym.id, navigation]);
 
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: TC.bg }]} edges={['top']}>
@@ -77,13 +122,13 @@ export function StatsScreen() {
         </View>
 
         <View style={s.sectionPad}>
-          <WeeklyActivity points={WEEKLY_ACTIVITY} />
+          <WeeklyActivity points={weeklyActivity} />
         </View>
         <View style={s.sectionPad}>
-          <Attendance30Days days={ATTENDANCE_LAST_30_DAYS} />
+          <Attendance30Days days={attendance30} />
         </View>
         <View style={s.sectionPad}>
-          <LinkedGymCard gym={LINKED_GYM} onPress={goToLinkedGym} />
+          <LinkedGymCard gym={linkedGym} onPress={goToLinkedGym} />
         </View>
       </ScrollView>
     </SafeAreaView>
