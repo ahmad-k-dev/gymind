@@ -50,13 +50,8 @@ export function EditProfileScreen({ navigation }: { navigation: Nav }) {
     try {
       await updateProfile({
         name: name.trim(),
-        heightCm: heightNum,
-        weightKg: weightNum,
         biography: biography.trim(),
         medicalConditions: medicalConditions.trim(),
-        fitnessGoal: fitnessGoal.trim(),
-        trainingFrequencyPerWeek: trainingFrequencyPerWeek.trim() ? trainingFreqNum : 0,
-        assessmentNotes: assessmentNotes.trim(),
       });
       Alert.alert('Saved', 'Profile updated successfully!');
       navigation.goBack();
