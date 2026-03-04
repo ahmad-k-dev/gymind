@@ -28,7 +28,7 @@ namespace GYMIND.API.Controllers
             if (token == null)
                 return Unauthorized("Invalid credentials.");
 
-            return Ok(new { token });
+            return Ok(token);
         }
 
         [HttpPost("register")]
@@ -47,8 +47,6 @@ namespace GYMIND.API.Controllers
             }
         }
 
-        [Authorize]
-        
         [HttpPost("refresh")]
 
         public async Task<IActionResult> Refresh([FromBody] TokenExchangeRequestDto dto)

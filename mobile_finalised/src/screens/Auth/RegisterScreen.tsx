@@ -10,19 +10,71 @@ import type { AuthStack } from '../../navigation/types';
 type Nav = NativeStackNavigationProp<AuthStack, 'Register'>;
 
 export function RegisterScreen({ navigation }: { navigation: Nav }) {
-  const TC = useThemeColors();
-  const { register, loading } = useAuth();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [pass, setPass] = useState('');
-  const [confirm, setConfirm] = useState('');
+  const { register, loading, error, clearErr } = useAuth();
+  const [form, setForm] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    gender: '',
+    location: '',
+    dateOfBirth: '',
+    pass: '',
+    confirm: '',
+  });
+
+  function normalizeDateOfBirth(value: string): string | undefined {
+    const trimmed = value.trim();
+    if (!trimmed) return undefined;
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return undefined;
+    const parsed = new Date(`${trimmed}T00:00:00.000Z`);
+    if (Number.isNaN(parsed.getTime())) return undefined;
+
+    return trimmed;
+  }
 
   async function submit() {
-    if (!name || !email || !pass) { Alert.alert('Required', 'Fill in all fields'); return; }
-    if (pass !== confirm) { Alert.alert('Mismatch', 'Passwords do not match'); return; }
-    if (pass.length < 8) { Alert.alert('Weak', 'Password must be at least 8 characters'); return; }
-    try { await register(name, email, pass); } catch {}
-  }
+    if (!form.fullName.trim() || !form.email.trim() || !form.phone.trim() || !form.gender.trim() || !form.pass.trim()) {
+      Alert.alert('Error', 'All marked fields are required');
+      return;
+    }
+
+    if (!/^\+?[1-9]\d{7,14}$/.test(form.phone.replace(/[\s-]/g, ''))) {
+      Alert.alert('Invalid phone', 'Phone must be in international format, e.g. +201234567890.');
+      return;
+    }
+
+    if (form.pass !== form.confirm) {
+      Alert.alert('Error', 'Passwords do not match');
+      return;
+    }
+
+    if (form.pass.length < 6) {
+      Alert.alert('Weak password', 'Password must be at least 6 characters.');
+      return;
+    }
+
+    const normalizedDob = normalizeDateOfBirth(form.dateOfBirth);
+    if (form.dateOfBirth.trim() && !normalizedDob) {
+      Alert.alert('Invalid date', 'Date of birth should be a valid date (e.g. 1998-05-21).');
+      return;
+    }
+
+    try {
+      await register({
+        fullName: form.fullName.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim(),
+        password: form.pass,
+        gender: form.gender.trim(),
+        location: form.location.trim() || undefined,
+        dateOfBirth: normalizedDob,
+      });
+      // RootNavigator will automatically redirect because 'authed' is now true
+    } catch (e) {
+      // Error handled by store
+    }
+  };
 
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: TC.bg }]}>
