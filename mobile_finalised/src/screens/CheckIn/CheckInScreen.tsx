@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'expo/node_modules/@expo/vector-icons/MaterialCommunityIcons';
 import Animated, {
@@ -13,6 +13,7 @@ import { C, S, R, F, useThemeColors } from '../../theme';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { HomeStack } from '../../navigation/types';
 import { selectIsSessionActive, useActiveSession } from '../../features/session/sessionSlice';
+import { checkInApi } from '../../services/api/sessionApi';
 
 type Props = NativeStackScreenProps<HomeStack, 'CheckIn'>;
 
@@ -50,13 +51,23 @@ export function CheckInScreen({ navigation, route }: Props) {
     });
   }, [activeGymId, activeSessionId, gymId, isSessionActive, navigation]);
 
-  const onCheckIn = React.useCallback(() => {
+  const onCheckIn = React.useCallback(async () => {
     if (isSessionActive) {
       navigation.replace('Session', {
         gymId: activeGymId ?? gymId,
         sessionId: activeSessionId ?? undefined,
       });
       return;
+    }
+
+    try {
+      await checkInApi({
+        gymBranchID: gymId,
+        latitude: 0,
+        longitude: 0,
+      });
+    } catch {
+      Alert.alert('Check-in warning', 'Backend check-in failed, starting local session only.');
     }
 
     const sessionId = `sess_${Date.now()}`;
@@ -101,7 +112,7 @@ export function CheckInScreen({ navigation, route }: Props) {
       </View>
 
       <View style={s.footer}>
-        <TouchableOpacity style={s.checkBtn} onPress={onCheckIn}>
+        <TouchableOpacity style={s.checkBtn} onPress={() => { void onCheckIn(); }}>
           <View style={s.actionInner}>
             <MaterialCommunityIcons name="check-circle-outline" size={18} color="#fff" />
             <Text style={s.checkBtnTxt}>Check In Now</Text>
