@@ -1,22 +1,10 @@
 import { create } from 'zustand';
 import type { User } from '../types';
-import * as SS from 'expo-secure-store';
-
-const MOCK: User = {
-  id:'u1', name:'Alex Rivera', email:'alex@gymind.com', role:'User',
-  memberSince:'Jan 2023', tier:'Elite', workouts:248, hours:156,
-  phone: '5551234567',
-  membershipNumber: '100245',
-  age: 28,
-  heightCm: 178,
-  weightKg: 76,
-  avatarUrl: '',
-  biography: 'Focused on strength and conditioning.',
-  medicalConditions: '',
-  fitnessGoal: 'Build muscle and improve endurance',
-  trainingFrequencyPerWeek: 4,
-  assessmentNotes: 'Good baseline mobility. Improve hamstring flexibility.',
-};
+import { clearAuthToken, getAuthToken, persistAuthToken } from '../services/api/client';
+import { loginApi, registerApi } from '../services/api/authApi';
+import { getUserByIdApi, editMyProfileApi } from '../services/api/usersApi';
+import { getUserIdFromToken } from '../services/api/jwt';
+import { mapUserFromBackend } from '../services/api/mappers';
 
 type ProfileUpdate = Pick<
   User,
@@ -39,51 +27,110 @@ interface AuthStore {
   login: (email: string, pass: string) => Promise<void>;
   register: (name: string, email: string, pass: string) => Promise<void>;
   logout: () => Promise<void>;
-  updateProfile: (payload: ProfileUpdate) => void;
-  updateAvatar: (avatarUrl: string) => void;
+  updateProfile: (payload: ProfileUpdate) => Promise<void>;
+  updateAvatar: (avatarUrl: string) => Promise<void>;
   clearErr: () => void;
 }
 
-export const useAuth = create<AuthStore>((set) => ({
-  user: null, authed: false, loading: false, error: '',
+export const useAuth = create<AuthStore>((set, get) => ({
+  user: null,
+  authed: false,
+  loading: false,
+  error: '',
 
   init: async () => {
     try {
-      const t = await SS.getItemAsync('token');
-      if (t) set({ user: MOCK, authed: true });
-    } catch {}
+      const token = await getAuthToken();
+      if (!token) return;
+
+      const userId = getUserIdFromToken(token);
+      if (!userId) {
+        await clearAuthToken();
+        return;
+      }
+
+      const backendUser = await getUserByIdApi(userId);
+      set({ user: mapUserFromBackend(backendUser), authed: true });
+    } catch {
+      await clearAuthToken();
+      set({ user: null, authed: false });
+    }
   },
 
   login: async (email, pass) => {
     set({ loading: true, error: '' });
-    await new Promise(r => setTimeout(r, 1000));
-    if (!email.includes('@') || pass.length < 6) {
+
+    try {
+      const { token } = await loginApi({ email, password: pass });
+      await persistAuthToken(token);
+
+      const userId = getUserIdFromToken(token);
+      if (!userId) {
+        throw new Error('Could not resolve user ID from token');
+      }
+
+      const backendUser = await getUserByIdApi(userId);
+      set({ user: mapUserFromBackend(backendUser), authed: true, loading: false });
+    } catch {
       set({ loading: false, error: 'Invalid credentials' });
       throw new Error('Invalid credentials');
     }
-    await SS.setItemAsync('token', 'tok_' + Date.now());
-    set({ user: MOCK, authed: true, loading: false });
   },
 
-  register: async (name, email) => {
+  register: async (name, email, pass) => {
     set({ loading: true, error: '' });
-    await new Promise(r => setTimeout(r, 1200));
-    await SS.setItemAsync('token', 'tok_' + Date.now());
-    set({ user: { ...MOCK, name, email }, authed: true, loading: false });
+
+    try {
+      await registerApi({
+        fullName: name,
+        email,
+        password: pass,
+        phone: '',
+        gender: 'PreferNotToSay',
+      });
+
+      await get().login(email, pass);
+      set({ loading: false });
+    } catch {
+      set({ loading: false, error: 'Unable to create account.' });
+      throw new Error('Unable to create account.');
+    }
   },
 
   logout: async () => {
-    await SS.deleteItemAsync('token');
+    await clearAuthToken();
     set({ user: null, authed: false });
   },
 
-  updateProfile: (payload) => set((state) => (
-    state.user ? { user: { ...state.user, ...payload } } : state
-  )),
+  updateProfile: async (payload) => {
+    const currentUser = get().user;
+    if (!currentUser) return;
 
-  updateAvatar: (avatarUrl) => set((state) => (
-    state.user ? { user: { ...state.user, avatarUrl } } : state
-  )),
+    await editMyProfileApi({
+      fullName: payload.name,
+      biography: payload.biography,
+      medicalConditions: payload.medicalConditions,
+    });
+
+    set((state) => (state.user ? { user: { ...state.user, ...payload } } : state));
+  },
+
+  updateAvatar: async (avatarUrl) => {
+    if (!avatarUrl) {
+      set((state) => (state.user ? { user: { ...state.user, avatarUrl: '' } } : state));
+      return;
+    }
+
+    await editMyProfileApi({
+      imageFile: {
+        uri: avatarUrl,
+        name: 'avatar.jpg',
+        type: 'image/jpeg',
+      },
+    });
+
+    set((state) => (state.user ? { user: { ...state.user, avatarUrl } } : state));
+  },
 
   clearErr: () => set({ error: '' }),
 }));

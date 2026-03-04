@@ -34,7 +34,7 @@ export function EditProfileScreen({ navigation }: { navigation: Nav }) {
   const weightNum = Number(weightKg);
   const bmi = heightNum > 0 && weightNum > 0 ? weightNum / ((heightNum / 100) * (heightNum / 100)) : 0;
 
-  function save() {
+  async function save() {
     const trainingFreqNum = Number(trainingFrequencyPerWeek);
 
     if (!name.trim()) return Alert.alert('Invalid name', 'Please enter your full name.');
@@ -47,18 +47,22 @@ export function EditProfileScreen({ navigation }: { navigation: Nav }) {
       return Alert.alert('Invalid frequency', 'Training frequency must be between 0 and 14 sessions per week.');
     }
 
-    updateProfile({
-      name: name.trim(),
-      heightCm: heightNum,
-      weightKg: weightNum,
-      biography: biography.trim(),
-      medicalConditions: medicalConditions.trim(),
-      fitnessGoal: fitnessGoal.trim(),
-      trainingFrequencyPerWeek: trainingFrequencyPerWeek.trim() ? trainingFreqNum : 0,
-      assessmentNotes: assessmentNotes.trim(),
-    });
-    Alert.alert('Saved', 'Profile updated successfully!');
-    navigation.goBack();
+    try {
+      await updateProfile({
+        name: name.trim(),
+        heightCm: heightNum,
+        weightKg: weightNum,
+        biography: biography.trim(),
+        medicalConditions: medicalConditions.trim(),
+        fitnessGoal: fitnessGoal.trim(),
+        trainingFrequencyPerWeek: trainingFrequencyPerWeek.trim() ? trainingFreqNum : 0,
+        assessmentNotes: assessmentNotes.trim(),
+      });
+      Alert.alert('Saved', 'Profile updated successfully!');
+      navigation.goBack();
+    } catch {
+      Alert.alert('Update failed', 'Could not update your profile right now.');
+    }
   }
 
   const pickAvatar = React.useCallback(async () => {
@@ -77,7 +81,7 @@ export function EditProfileScreen({ navigation }: { navigation: Nav }) {
       });
 
       if (result.canceled || !result.assets.length) return;
-      updateAvatar(result.assets[0].uri);
+      await updateAvatar(result.assets[0].uri);
     } catch {
       Alert.alert('Image update failed', 'Please try selecting an image again.');
     }
@@ -104,7 +108,7 @@ export function EditProfileScreen({ navigation }: { navigation: Nav }) {
           </View>
           <View style={s.avatarActions}>
             <TouchableOpacity onPress={pickAvatar}><Text style={s.changePhoto}>Edit Photo</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => updateAvatar('')}><Text style={s.removePhoto}>Remove Photo</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => { void updateAvatar(''); }}><Text style={s.removePhoto}>Remove Photo</Text></TouchableOpacity>
           </View>
         </View>
 

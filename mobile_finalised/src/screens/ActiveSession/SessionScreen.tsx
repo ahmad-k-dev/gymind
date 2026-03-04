@@ -10,6 +10,7 @@ import type { HomeStack } from '../../navigation/types';
 import { computeElapsedMs, useActiveSession } from '../../features/session/sessionSlice';
 import { SessionStatsRow } from '../Session/components/SessionStatsRow';
 import { EffortTimer } from '../Session/components/EffortTimer';
+import { checkOutApi } from '../../services/api/sessionApi';
 
 type Props = NativeStackScreenProps<HomeStack, 'Session'>;
 
@@ -117,8 +118,16 @@ export function SessionScreen({ navigation, route }: Props) {
         text: 'End',
         style: 'destructive',
         onPress: () => {
-          stopSession();
-          navigation.replace('Home');
+          void (async () => {
+            try {
+              await checkOutApi();
+            } catch {
+              // Allow local session cleanup even if server checkout fails.
+            } finally {
+              stopSession();
+              navigation.replace('Home');
+            }
+          })();
         },
       },
     ]);
