@@ -26,15 +26,21 @@ export function RegisterScreen({ navigation }: { navigation: Nav }) {
     const trimmed = value.trim();
     if (!trimmed) return undefined;
 
-    const parsed = new Date(trimmed);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return undefined;
+    const parsed = new Date(`${trimmed}T00:00:00.000Z`);
     if (Number.isNaN(parsed.getTime())) return undefined;
 
-    return parsed.toISOString();
+    return trimmed;
   }
 
   async function submit() {
     if (!form.fullName.trim() || !form.email.trim() || !form.phone.trim() || !form.gender.trim() || !form.pass.trim()) {
       Alert.alert('Error', 'All marked fields are required');
+      return;
+    }
+
+    if (!/^\+?[1-9]\d{7,14}$/.test(form.phone.replace(/[\s-]/g, ''))) {
+      Alert.alert('Invalid phone', 'Phone must be in international format, e.g. +201234567890.');
       return;
     }
 

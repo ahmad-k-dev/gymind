@@ -132,3 +132,20 @@ export function mapLinkedGymFromMembership(
     image: linkedGym.image,
   };
 }
+
+
+export function mapUserPatchToBackendPayload(payload: {
+  name: string;
+  biography?: string;
+  medicalConditions?: string;
+}): {
+  fullName?: string;
+  biography?: string;
+  medicalConditions?: string;
+} {
+  return {
+    fullName: payload.name,
+    biography: payload.biography,
+    medicalConditions: payload.medicalConditions,
+  };
+}

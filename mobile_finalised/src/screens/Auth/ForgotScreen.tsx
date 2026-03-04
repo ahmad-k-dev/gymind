@@ -5,6 +5,8 @@ import MaterialCommunityIcons from 'expo/node_modules/@expo/vector-icons/Materia
 import { C, S, R, F, useThemeColors } from '../../theme';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStack } from '../../navigation/types';
+import { requestResetApi } from '../../services/api/authApi';
+import { extractApiErrorMessage } from '../../services/api/error';
 
 type Nav = NativeStackNavigationProp<AuthStack, 'Forgot'>;
 
@@ -20,9 +22,14 @@ export function ForgotScreen({ navigation }: { navigation: Nav }) {
       return;
     }
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 900));
-    setLoading(false);
-    setSent(true);
+    try {
+      await requestResetApi(email.trim());
+      setSent(true);
+    } catch (error: unknown) {
+      Alert.alert('Reset failed', extractApiErrorMessage(error, 'Unable to send reset link right now.'));
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (

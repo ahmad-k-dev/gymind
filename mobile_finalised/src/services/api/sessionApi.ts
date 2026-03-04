@@ -1,4 +1,4 @@
-import { apiClient } from './client';
+import { apiClient } from './api';
 import type { BackendGymSessionHistoryDto } from './types';
 
 export async function checkInApi(payload: { gymBranchID: string; latitude: number; longitude: number }): Promise<void> {
