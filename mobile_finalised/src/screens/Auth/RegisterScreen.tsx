@@ -10,9 +10,11 @@ import {
   Alert,
   StyleSheet,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'expo/node_modules/@expo/vector-icons/MaterialCommunityIcons';
+import * as Location from 'expo-location';
 import { useAuth } from '../../store/auth';
 import { C, S, R, F, useThemeColors } from '../../theme';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -23,6 +25,9 @@ type Nav = NativeStackNavigationProp<AuthStack, 'Register'>;
 export function RegisterScreen({ navigation }: { navigation: Nav }) {
   const TC = useThemeColors();
   const { register, loading, error, clearErr } = useAuth();
+  const [showGenderPicker, setShowGenderPicker] = useState(false);
+  const [showDobPicker, setShowDobPicker] = useState(false);
+  const [locating, setLocating] = useState(false);
   const [form, setForm] = useState({
     fullName: '',
     email: '',
@@ -34,6 +39,8 @@ export function RegisterScreen({ navigation }: { navigation: Nav }) {
     confirm: '',
   });
 
+  const genderOptions = ['Male', 'Female', 'Other'];
+
   function normalizeDateOfBirth(value: string): string | undefined {
     const trimmed = value.trim();
     if (!trimmed) return undefined;
@@ -43,6 +50,41 @@ export function RegisterScreen({ navigation }: { navigation: Nav }) {
     if (Number.isNaN(parsed.getTime())) return undefined;
 
     return trimmed;
+  }
+
+  function formatDate(value: Date): string {
+    const year = value.getFullYear();
+    const month = `${value.getMonth() + 1}`.padStart(2, '0');
+    const day = `${value.getDate()}`.padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  async function useCurrentLocation() {
+    setLocating(true);
+    try {
+      const permission = await Location.requestForegroundPermissionsAsync();
+      if (permission.status !== 'granted') {
+        Alert.alert('Permission required', 'Allow location access to fill this field automatically.');
+        return;
+      }
+
+      const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const geocoded = await Location.reverseGeocodeAsync({
+        latitude: current.coords.latitude,
+        longitude: current.coords.longitude,
+      });
+
+      const first = geocoded[0];
+      const address = first
+        ? [first.name, first.street, first.city, first.region, first.country].filter(Boolean).join(', ')
+        : `${current.coords.latitude.toFixed(5)}, ${current.coords.longitude.toFixed(5)}`;
+
+      setForm((prev) => ({ ...prev, location: address }));
+    } catch {
+      Alert.alert('Location unavailable', 'Unable to get your current location right now. Please enter it manually.');
+    } finally {
+      setLocating(false);
+    }
   }
 
   async function submit() {
@@ -82,6 +124,9 @@ export function RegisterScreen({ navigation }: { navigation: Nav }) {
         location: form.location.trim() || undefined,
         dateOfBirth: normalizedDob,
       });
+      Alert.alert('Registration complete', 'Your account was created successfully. Please sign in.', [
+        { text: 'OK', onPress: () => navigation.navigate('Login') },
+      ]);
     } catch {
       // handled in store
     }
@@ -130,13 +175,16 @@ export function RegisterScreen({ navigation }: { navigation: Nav }) {
               onChangeText={(v) => setForm((prev) => ({ ...prev, phone: v }))}
               keyboardType="phone-pad"
             />
-            <TextInput
-              placeholder="Gender (Male/Female/Other) *"
-              placeholderTextColor={TC.muted}
-              style={[s.input, { backgroundColor: TC.surface, borderColor: TC.border, color: TC.text }]}
-              value={form.gender}
-              onChangeText={(v) => setForm((prev) => ({ ...prev, gender: v }))}
-            />
+            <TouchableOpacity
+              style={[s.input, s.selectField, { backgroundColor: TC.surface, borderColor: TC.border }]}
+              onPress={() => setShowGenderPicker(true)}
+              activeOpacity={0.8}
+            >
+              <Text style={{ color: form.gender ? TC.text : TC.muted, fontSize: F.base }}>
+                {form.gender || 'Gender *'}
+              </Text>
+              <MaterialCommunityIcons name="chevron-down" size={20} color={TC.muted} />
+            </TouchableOpacity>
             <TextInput
               placeholder="Location (Optional)"
               placeholderTextColor={TC.muted}
@@ -144,14 +192,20 @@ export function RegisterScreen({ navigation }: { navigation: Nav }) {
               value={form.location}
               onChangeText={(v) => setForm((prev) => ({ ...prev, location: v }))}
             />
-            <TextInput
-              placeholder="Date of Birth (YYYY-MM-DD)"
-              placeholderTextColor={TC.muted}
-              style={[s.input, { backgroundColor: TC.surface, borderColor: TC.border, color: TC.text }]}
-              value={form.dateOfBirth}
-              onChangeText={(v) => setForm((prev) => ({ ...prev, dateOfBirth: v }))}
-              autoCapitalize="none"
-            />
+            <TouchableOpacity style={s.locationBtn} onPress={() => void useCurrentLocation()} disabled={locating}>
+              <MaterialCommunityIcons name="crosshairs-gps" size={16} color="#000" />
+              <Text style={s.locationBtnText}>{locating ? 'Detecting location…' : 'Use Google Maps-based location'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[s.input, s.selectField, { backgroundColor: TC.surface, borderColor: TC.border }]}
+              onPress={() => setShowDobPicker(true)}
+              activeOpacity={0.8}
+            >
+              <Text style={{ color: form.dateOfBirth ? TC.text : TC.muted, fontSize: F.base }}>
+                {form.dateOfBirth || 'Date of Birth (Optional)'}
+              </Text>
+              <MaterialCommunityIcons name="calendar-month-outline" size={20} color={TC.muted} />
+            </TouchableOpacity>
             <TextInput
               placeholder="Password *"
               placeholderTextColor={TC.muted}
@@ -184,6 +238,68 @@ export function RegisterScreen({ navigation }: { navigation: Nav }) {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Modal visible={showGenderPicker} transparent animationType="fade" onRequestClose={() => setShowGenderPicker(false)}>
+        <View style={s.modalBackdrop}>
+          <View style={[s.modalCard, { backgroundColor: TC.surface, borderColor: TC.border }]}>
+            <Text style={[s.modalTitle, { color: TC.text }]}>Select Gender</Text>
+            {genderOptions.map((option) => (
+              <TouchableOpacity
+                key={option}
+                style={s.modalOption}
+                onPress={() => {
+                  setForm((prev) => ({ ...prev, gender: option }));
+                  setShowGenderPicker(false);
+                }}
+              >
+                <Text style={[s.modalOptionText, { color: TC.text }]}>{option}</Text>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity style={s.modalClose} onPress={() => setShowGenderPicker(false)}>
+              <Text style={s.modalCloseText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showDobPicker} transparent animationType="fade" onRequestClose={() => setShowDobPicker(false)}>
+        <View style={s.modalBackdrop}>
+          <View style={[s.modalCard, { backgroundColor: TC.surface, borderColor: TC.border }]}>
+            <Text style={[s.modalTitle, { color: TC.text }]}>Date of Birth</Text>
+            <Text style={[s.modalHint, { color: TC.muted }]}>Tap a quick option below, or enter date manually in format YYYY-MM-DD.</Text>
+            <View style={s.quickDatesWrap}>
+              {[18, 21, 25, 30].map((years) => {
+                const date = new Date();
+                date.setFullYear(date.getFullYear() - years);
+                const value = formatDate(date);
+                return (
+                  <TouchableOpacity
+                    key={years}
+                    style={s.quickDateChip}
+                    onPress={() => {
+                      setForm((prev) => ({ ...prev, dateOfBirth: value }));
+                      setShowDobPicker(false);
+                    }}
+                  >
+                    <Text style={s.quickDateText}>{value}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <TextInput
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor={TC.muted}
+              style={[s.input, { backgroundColor: TC.bg, borderColor: TC.border, color: TC.text }]}
+              value={form.dateOfBirth}
+              onChangeText={(v) => setForm((prev) => ({ ...prev, dateOfBirth: v }))}
+              autoCapitalize="none"
+            />
+            <TouchableOpacity style={s.modalClose} onPress={() => setShowDobPicker(false)}>
+              <Text style={s.modalCloseText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -208,8 +324,66 @@ const s = StyleSheet.create({
     borderColor: '#333',
     fontSize: F.base,
   },
+  selectField: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  locationBtn: {
+    backgroundColor: '#CBFB5E',
+    minHeight: 42,
+    borderRadius: R.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 2,
+  },
+  locationBtnText: {
+    color: '#000',
+    fontWeight: '800',
+    fontSize: F.sm,
+  },
   btn: { backgroundColor: '#CBFB5E', padding: 18, borderRadius: 10, alignItems: 'center', marginTop: 8 },
   btnTxt: { fontWeight: '900', color: '#000', fontSize: 16 },
   link: { color: '#CBFB5E', fontSize: F.sm, fontWeight: '700' },
   row: { flexDirection: 'row', justifyContent: 'center', marginTop: S.lg },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: '#00000099',
+    justifyContent: 'center',
+    padding: S.lg,
+  },
+  modalCard: {
+    borderRadius: R.lg,
+    borderWidth: 1,
+    padding: S.md,
+    gap: S.sm,
+  },
+  modalTitle: { fontSize: F.lg, fontWeight: '900' },
+  modalHint: { fontSize: F.sm, lineHeight: 18 },
+  modalOption: {
+    borderRadius: R.md,
+    backgroundColor: '#FFFFFF14',
+    paddingVertical: 12,
+    paddingHorizontal: S.sm,
+  },
+  modalOptionText: { fontSize: F.base, fontWeight: '600' },
+  modalClose: {
+    marginTop: S.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: R.md,
+    backgroundColor: '#CBFB5E',
+  },
+  modalCloseText: { color: '#000', fontWeight: '800' },
+  quickDatesWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  quickDateChip: {
+    backgroundColor: '#FFFFFF14',
+    borderRadius: 999,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  quickDateText: { color: '#fff', fontSize: F.sm, fontWeight: '700' },
 });
