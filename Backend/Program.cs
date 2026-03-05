@@ -1,34 +1,49 @@
+using GYMIND.API.Data;
 using GYMIND.API.Interfaces;
 using GYMIND.API.Service;
 using GYMIND.API.Services;
-using GYMIND.API.Data;
-using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Npgsql;
 using System.Text;
+using System.Text.Json;
 
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
 
 builder.WebHost.UseUrls("http://0.0.0.0:7179");
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
-builder.Services.AddSingleton<DatabaseConnection>();
+
+
 
 builder.Services.AddDbContext<SupabaseDbContext>(options =>
 {
-    options.UseNpgsql(
-        builder.Configuration.GetConnectionString("Supabase"),
-        npgsqlOptions =>
-        {
-            npgsqlOptions.EnableRetryOnFailure();
-        });
+    var cs = builder.Configuration.GetConnectionString("supabase")
+             ?? throw new InvalidOperationException("Missing ConnectionStrings:supabase");
+
+    var csb = new NpgsqlConnectionStringBuilder(cs)
+    {
+        Multiplexing = false,
+        Pooling = true,
+        MaxPoolSize = 50,
+        Timeout = 90,
+        CommandTimeout = 90
+    };
+
+    options.UseNpgsql(csb.ConnectionString, o =>
+    {
+        o.EnableRetryOnFailure(5);
+        o.MaxBatchSize(1);
+    });
 });
 
 // jwt authentication configuration
@@ -102,7 +117,7 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseDeveloperExceptionPage();
     app.UseSwagger();
     app.UseSwaggerUI();
 

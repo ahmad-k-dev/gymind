@@ -12,7 +12,7 @@ namespace GYMIND.API.Data
             : base(options) { }
 
         public DbSet<User> Users { get; set; } = null!;
-
+        public DbSet<Role> Roles { get; set; } = null;
         public DbSet<UserRole> UserRole { get; set; } = null!;
         public DbSet<UserNotification> UserNotifications { get; set; } = null!;
         public DbSet<Notification> Notifications { get; set; } = null!;

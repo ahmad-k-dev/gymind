@@ -1,5 +1,5 @@
-import { apiClient } from './api';
-import type { BackendGetUserDto } from './types';
+import { apiClient } from "./api";
+import type { BackendGetUserDto } from "./types";
 
 export interface EditProfilePayload {
   fullName?: string;
@@ -15,28 +15,38 @@ export interface UploadAvatarPayload {
 }
 
 export async function getUserApi(userId: string): Promise<BackendGetUserDto> {
-  const { data } = await apiClient.get<BackendGetUserDto>(`/api/users/${userId}`);
+  const { data } = await apiClient.get<BackendGetUserDto>(`/users/${userId}`);
   return data;
 }
 
 export async function editProfileApi(payload: EditProfilePayload): Promise<void> {
   const form = new FormData();
 
-  if (payload.fullName) form.append('fullName', payload.fullName);
-  if (payload.biography) form.append('biography', payload.biography);
-  if (payload.medicalConditions) form.append('medicalConditions', payload.medicalConditions);
-  if (payload.emergencyContact) form.append('emergencyContact', payload.emergencyContact);
+  // Match DTO names (ASP.NET is often case-insensitive, but this is safest)
+  if (payload.fullName) form.append("FullName", payload.fullName);
+  if (payload.biography) form.append("Biography", payload.biography);
+  if (payload.medicalConditions) form.append("MedicalConditions", payload.medicalConditions);
+  if (payload.emergencyContact) form.append("EmergencyContact", payload.emergencyContact);
 
-  await apiClient.patch('/api/users/edit-profile', form, {
-    headers: { 'Content-Type': 'multipart/form-data' },
+  await apiClient.patch("/users/edit-profile", form, {
+    headers: { "Content-Type": "multipart/form-data" },
   });
 }
 
 export async function uploadAvatarApi(payload: UploadAvatarPayload): Promise<void> {
   const form = new FormData();
-  form.append('imageFile', payload as unknown as Blob);
 
-  await apiClient.patch('/api/users/edit-profile', form, {
-    headers: { 'Content-Type': 'multipart/form-data' },
+  // ✅ React Native file object (don’t cast to Blob)
+  form.append(
+    "ImageFile",
+    {
+      uri: payload.uri,
+      name: payload.name,
+      type: payload.type,
+    } as any
+  );
+
+  await apiClient.patch("/users/edit-profile", form, {
+    headers: { "Content-Type": "multipart/form-data" },
   });
 }

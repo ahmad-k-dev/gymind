@@ -11,10 +11,12 @@ namespace GYMIND.API.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IUserService _userService;
+        private readonly ILogger<AuthController> _logger;
 
-        public AuthController(IUserService userService)
+        public AuthController(IUserService userService, ILogger<AuthController> logger)
         {
             _userService = userService;
+            _logger = logger;
         }
 
         [HttpPost("login")]
@@ -34,16 +36,18 @@ namespace GYMIND.API.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] CreateUserDto dto)
         {
+            _logger.LogInformation("REGISTER HIT: {Email}", dto?.Email);
+
             try
             {
                 var user = await _userService.CreateUserAsync(dto);
-
-                // Points to the GetUser endpoint in the UsersController
+                _logger.LogInformation("REGISTER OK: {Email} {UserId}", user.Email, user.UserID);
                 return CreatedAtAction("GetUser", "Users", new { id = user.UserID }, user);
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                _logger.LogError(ex, "REGISTER FAILED for {Email}", dto?.Email);
+                return StatusCode(500, new { message = ex.Message, detail = ex.ToString() });
             }
         }
 

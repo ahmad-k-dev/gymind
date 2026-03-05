@@ -145,9 +145,16 @@ namespace GYMIND.API.Service
 
         public async Task<GetUserDto> CreateUserAsync(CreateUserDto dto)
         {
-            if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
+            Console.WriteLine("CREATE USER: start");
+
+            Console.WriteLine("CREATE USER: checking if email exists...");
+            var exists = await _context.Users.AnyAsync(u => u.Email == dto.Email);
+            Console.WriteLine($"CREATE USER: email exists = {exists}");
+
+            if (exists)
                 throw new Exception("Email already exists");
 
+            Console.WriteLine("CREATE USER: building user entity...");
             var user = new User
             {
                 UserID = Guid.NewGuid(),
@@ -156,30 +163,41 @@ namespace GYMIND.API.Service
                 Phone = dto.Phone,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
                 DateOfBirth = dto.DateOfBirth.HasValue
-                    ? DateTime.SpecifyKind(dto.DateOfBirth.Value, DateTimeKind.Utc) : null,
+                    ? DateTime.SpecifyKind(dto.DateOfBirth.Value, DateTimeKind.Utc)
+                    : null,
                 Location = dto.Location,
                 Gender = dto.Gender,
                 CreatedAt = DateTime.UtcNow,
                 IsActive = true
             };
 
-            // attach role
+            Console.WriteLine("CREATE USER: attaching default role...");
             user.UserRole.Add(new UserRole
             {
                 RoleID = 2 // default to member role
             });
 
+            Console.WriteLine("CREATE USER: adding user to context...");
             _context.Users.Add(user);
 
             try
             {
+                Console.WriteLine("CREATE USER: saving changes...");
                 await _context.SaveChangesAsync();
+                Console.WriteLine("CREATE USER: save successful");
             }
-            catch (DbUpdateException ex)
+            catch (Exception ex)
             {
-                Console.WriteLine(ex.InnerException?.Message ?? ex.Message); // returning message to be chaanged later for better error handling and security
+                Console.WriteLine("CREATE USER: SaveChanges FAILED");
+                Console.WriteLine(ex.ToString());
                 throw;
             }
+            finally
+            {
+                Console.WriteLine("CREATE USER: SaveChanges finished (success or failure)");
+            }
+
+            Console.WriteLine("CREATE USER: preparing DTO response");
 
             return new GetUserDto
             {
@@ -188,7 +206,7 @@ namespace GYMIND.API.Service
                 Email = user.Email,
                 Phone = user.Phone,
                 CreatedAt = user.CreatedAt,
-                Roles = user.UserRole.Select(ur => ur.RoleID).ToList(),  // we will edit this later when we have proper role management
+                Roles = user.UserRole.Select(ur => ur.RoleID).ToList(),
             };
         }
 
