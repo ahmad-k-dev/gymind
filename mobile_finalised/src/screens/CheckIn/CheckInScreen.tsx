@@ -13,7 +13,6 @@ import { C, S, R, F, useThemeColors } from '../../theme';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { HomeStack } from '../../navigation/types';
 import { selectIsSessionActive, useActiveSession } from '../../features/session/sessionSlice';
-import { checkInApi } from '../../services/api/sessionApi';
 
 type Props = NativeStackScreenProps<HomeStack, 'CheckIn'>;
 
@@ -25,6 +24,7 @@ export function CheckInScreen({ navigation, route }: Props) {
   const activeGymId = useActiveSession((state) => state.gymId);
   const activeSessionId = useActiveSession((state) => state.sessionId);
   const startSession = useActiveSession((state) => state.startSession);
+  const beginCheckIn = useActiveSession((state) => state.beginCheckIn);
 
   useEffect(() => {
     line.value = withRepeat(
@@ -60,20 +60,20 @@ export function CheckInScreen({ navigation, route }: Props) {
       return;
     }
 
-    try {
-      await checkInApi({
-        gymBranchID: gymId,
-        latitude: 0,
-        longitude: 0,
-      });
-    } catch {
+    await beginCheckIn({
+      gymBranchId: gymId,
+      latitude: 0,
+      longitude: 0,
+    });
+
+    if (useActiveSession.getState().syncStatus === 'local_only') {
       Alert.alert('Check-in warning', 'Backend check-in failed, starting local session only.');
     }
 
     const sessionId = `sess_${Date.now()}`;
     startSession({ gymId, sessionId });
     navigation.replace('Session', { gymId, sessionId });
-  }, [activeGymId, activeSessionId, gymId, isSessionActive, navigation, startSession]);
+  }, [activeGymId, activeSessionId, beginCheckIn, gymId, isSessionActive, navigation, startSession]);
 
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: TC.bg }]}>
