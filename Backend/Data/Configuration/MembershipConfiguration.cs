@@ -19,6 +19,7 @@ namespace GYMIND.API.Data.Configuration
             entity.Property(m => m.IsMember).HasColumnName("ismember");
             entity.Property(m => m.JoinedAt).HasColumnName("joinedat");
             entity.Property(m => m.RemovedAt).HasColumnName("removedat");
+            entity.Property(m =>m.ExpiryDate).HasColumnName("expirydate");
 
 
             entity.HasOne(m => m.User)
