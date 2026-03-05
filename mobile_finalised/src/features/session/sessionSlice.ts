@@ -4,6 +4,7 @@ import {
   loadActiveSessionState,
   saveActiveSessionState,
 } from '../../services/storage/activeSessionStorage';
+import { checkInApi, checkOutApi } from '../../services/api/sessionApi';
 import type {
   ActiveSessionState,
   PersistedActiveSessionState,
@@ -11,13 +12,18 @@ import type {
   StartSessionPayload,
 } from './session.types';
 
+type SessionSyncStatus = 'idle' | 'syncing' | 'synced' | 'local_only' | 'error';
+
 interface ActiveSessionStore extends ActiveSessionState {
+  syncStatus: SessionSyncStatus;
   startSession: (payload: StartSessionPayload) => void;
   pauseSession: () => void;
   resumeSession: () => void;
   stopSession: () => void;
   resetSession: () => void;
   hydrateActiveSession: () => Promise<void>;
+  beginCheckIn: (payload: { gymBranchId: string; latitude: number; longitude: number }) => Promise<void>;
+  finalizeCheckOut: () => Promise<void>;
 }
 
 const initialState: ActiveSessionState = {
@@ -52,6 +58,7 @@ export function computeElapsedMs(state: ActiveSessionState, nowMs: number = Date
 
 export const useActiveSession = create<ActiveSessionStore>((set, get) => ({
   ...initialState,
+  syncStatus: 'idle',
 
   startSession: ({ gymId, sessionId }) => {
     const nextState: ActiveSessionState = {
@@ -104,12 +111,12 @@ export const useActiveSession = create<ActiveSessionStore>((set, get) => ({
       return;
     }
 
-    set(initialState);
+    set({ ...initialState, syncStatus: 'idle' });
     void clearActiveSessionState();
   },
 
   resetSession: () => {
-    set(initialState);
+    set({ ...initialState, syncStatus: 'idle' });
     void clearActiveSessionState();
   },
 
@@ -131,6 +138,27 @@ export const useActiveSession = create<ActiveSessionStore>((set, get) => ({
     }
 
     set(initialState);
+  },
+
+  beginCheckIn: async ({ gymBranchId, latitude, longitude }) => {
+    set({ syncStatus: 'syncing' });
+    try {
+      await checkInApi({ GymBranchID: gymBranchId, Latitude: latitude, Longitude: longitude });
+      set({ syncStatus: 'synced' });
+    } catch {
+      set({ syncStatus: 'local_only' });
+    }
+  },
+
+  finalizeCheckOut: async () => {
+    set({ syncStatus: 'syncing' });
+    try {
+      await checkOutApi();
+      set({ syncStatus: 'synced' });
+    } catch {
+      set({ syncStatus: 'error' });
+      throw new Error('Checkout sync failed');
+    }
   },
 }));
 

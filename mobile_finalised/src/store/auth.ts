@@ -2,10 +2,13 @@ import { create } from "zustand";
 import type { User } from "../types";
 import * as SecureStore from "expo-secure-store";
 
-import { authApi, clearStoredTokens, getStoredTokens, setStoredTokens } from "../services/api/api";
+import { registerAuthContext } from "../services/api/api";
+import { loginApi, registerApi, requestResetApi } from "../services/api/authApi";
+import { clearStoredTokens, getStoredTokens, setStoredTokens } from "../services/api/tokenStorage";
 import { getUserApi, editProfileApi, uploadAvatarApi } from "../services/api/usersApi";
 import { mapUserFromBackend, mapUserPatchToBackendPayload } from "../services/api/mappers";
-import { extractApiErrorMessage } from "../services/api/error";
+import { extractApiErrorMessage } from "../services/api/errors";
+import { setTokenGetter } from "../services/api/tokenProvider";
 
 const USER_ID_STORAGE_KEY = "UserID";
 
@@ -42,6 +45,7 @@ interface AuthStore {
   updateAvatar: (uri: string) => Promise<void>;
 
   setTokens: (token: string, refreshToken: string, userId?: string | null) => Promise<void>;
+  requestPasswordReset: (email: string) => Promise<void>;
   clearErr: () => void;
 }
 
@@ -116,7 +120,7 @@ export const useAuth = create<AuthStore>((set, get) => ({
 
     try {
       // ✅ resolves to POST /api/auth/login because baseURL ends with /api
-      const data = await authApi.login({ Email: email, Password: password }) as TokenExchangeResponse;
+      const data = await loginApi({ Email: email, Password: password }) as TokenExchangeResponse;
 
       if (!data?.Token || !data?.RefreshToken || !data?.UserID) {
         throw new Error("Login response missing Token/RefreshToken/UserID.");
@@ -128,7 +132,24 @@ export const useAuth = create<AuthStore>((set, get) => ({
         const backendUser = await getUserApi(data.UserID);
         set({ user: mapUserFromBackend(backendUser) });
       } catch {
-        set({ user: ({ email } as any) });
+        set({
+          user: {
+            id: data.UserID,
+            name: email.split("@")[0] || "Member",
+            email,
+            role: "User",
+            memberSince: "",
+            tier: "Basic",
+            workouts: 0,
+            hours: 0,
+            phone: "",
+            membershipNumber: data.UserID.slice(0, 8).toUpperCase(),
+            age: 0,
+            heightCm: 0,
+            weightKg: 0,
+            avatarUrl: "",
+          },
+        });
       }
 
       set({ loading: false });
@@ -144,7 +165,7 @@ export const useAuth = create<AuthStore>((set, get) => ({
 
     try {
       // ✅ resolves to POST /api/auth/register
-      await authApi.register({
+      await registerApi({
         FullName: payload.fullName,
         Email: payload.email,
         Phone: payload.phone,
@@ -227,5 +248,30 @@ export const useAuth = create<AuthStore>((set, get) => ({
     }
   },
 
+  requestPasswordReset: async (email) => {
+    set({ loading: true, error: "" });
+    try {
+      await requestResetApi(email);
+      set({ loading: false });
+    } catch (error: unknown) {
+      const msg = extractApiErrorMessage(error, "Password reset is not available yet.");
+      set({ loading: false, error: msg });
+      throw new Error(msg);
+    }
+  },
+
   clearErr: () => set({ error: "" }),
 }));
+setTokenGetter(() => {
+  const state = useAuth.getState();
+  return { token: state.token, refreshToken: state.refreshToken };
+});
+
+registerAuthContext({
+  setTokens: async (token, refreshToken, userId) => {
+    await useAuth.getState().setTokens(token, refreshToken, userId);
+  },
+  logout: async () => {
+    await useAuth.getState().logout();
+  },
+});

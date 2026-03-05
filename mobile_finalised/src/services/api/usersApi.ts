@@ -1,5 +1,6 @@
-import { apiClient } from "./api";
-import type { BackendGetUserDto } from "./types";
+import { apiClient } from './api';
+import { API_ENDPOINTS } from './endpoints';
+import type { BackendGetUserDto } from './types';
 
 export interface EditProfilePayload {
   fullName?: string;
@@ -15,30 +16,28 @@ export interface UploadAvatarPayload {
 }
 
 export async function getUserApi(userId: string): Promise<BackendGetUserDto> {
-  const { data } = await apiClient.get<BackendGetUserDto>(`/users/${userId}`);
+  const { data } = await apiClient.get<BackendGetUserDto>(API_ENDPOINTS.users.byId(userId));
   return data;
 }
 
 export async function editProfileApi(payload: EditProfilePayload): Promise<void> {
   const form = new FormData();
 
-  // Match DTO names (ASP.NET is often case-insensitive, but this is safest)
-  if (payload.fullName) form.append("FullName", payload.fullName);
-  if (payload.biography) form.append("Biography", payload.biography);
-  if (payload.medicalConditions) form.append("MedicalConditions", payload.medicalConditions);
-  if (payload.emergencyContact) form.append("EmergencyContact", payload.emergencyContact);
+  if (payload.fullName) form.append('FullName', payload.fullName);
+  if (payload.biography) form.append('Biography', payload.biography);
+  if (payload.medicalConditions) form.append('MedicalConditions', payload.medicalConditions);
+  if (payload.emergencyContact) form.append('EmergencyContact', payload.emergencyContact);
 
-  await apiClient.patch("/users/edit-profile", form, {
-    headers: { "Content-Type": "multipart/form-data" },
+  await apiClient.patch(API_ENDPOINTS.users.editProfile, form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
   });
 }
 
 export async function uploadAvatarApi(payload: UploadAvatarPayload): Promise<void> {
   const form = new FormData();
 
-  // ✅ React Native file object (don’t cast to Blob)
   form.append(
-    "ImageFile",
+    'ImageFile',
     {
       uri: payload.uri,
       name: payload.name,
@@ -46,7 +45,7 @@ export async function uploadAvatarApi(payload: UploadAvatarPayload): Promise<voi
     } as any
   );
 
-  await apiClient.patch("/users/edit-profile", form, {
-    headers: { "Content-Type": "multipart/form-data" },
+  await apiClient.patch(API_ENDPOINTS.users.editProfile, form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
   });
 }

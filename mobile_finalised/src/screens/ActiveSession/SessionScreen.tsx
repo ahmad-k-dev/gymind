@@ -10,7 +10,6 @@ import type { HomeStack } from '../../navigation/types';
 import { computeElapsedMs, useActiveSession } from '../../features/session/sessionSlice';
 import { SessionStatsRow } from '../Session/components/SessionStatsRow';
 import { EffortTimer } from '../Session/components/EffortTimer';
-import { checkOutApi } from '../../services/api/sessionApi';
 
 type Props = NativeStackScreenProps<HomeStack, 'Session'>;
 
@@ -38,6 +37,7 @@ export function SessionScreen({ navigation, route }: Props) {
   const pauseSession = useActiveSession((state) => state.pauseSession);
   const resumeSession = useActiveSession((state) => state.resumeSession);
   const stopSession = useActiveSession((state) => state.stopSession);
+  const finalizeCheckOut = useActiveSession((state) => state.finalizeCheckOut);
 
   const [nowMs, setNowMs] = React.useState<number>(() => Date.now());
   const [online, setOnline] = React.useState(true);
@@ -120,7 +120,7 @@ export function SessionScreen({ navigation, route }: Props) {
         onPress: () => {
           void (async () => {
             try {
-              await checkOutApi();
+              await finalizeCheckOut();
             } catch {
               // Allow local session cleanup even if server checkout fails.
             } finally {
@@ -131,7 +131,7 @@ export function SessionScreen({ navigation, route }: Props) {
         },
       },
     ]);
-  }, [navigation, stopSession, totalElapsedMs]);
+  }, [finalizeCheckOut, navigation, stopSession, totalElapsedMs]);
 
   const toggleMain = React.useCallback(() => {
     if (status === 'running') {

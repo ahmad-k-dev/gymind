@@ -5,8 +5,7 @@ import MaterialCommunityIcons from 'expo/node_modules/@expo/vector-icons/Materia
 import { C, S, R, F, useThemeColors } from '../../theme';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStack } from '../../navigation/types';
-import { requestResetApi } from '../../services/api/authApi';
-import { extractApiErrorMessage } from '../../services/api/error';
+import { useAuth } from '../../store/auth';
 
 type Nav = NativeStackNavigationProp<AuthStack, 'Forgot'>;
 
@@ -15,6 +14,7 @@ export function ForgotScreen({ navigation }: { navigation: Nav }) {
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const requestPasswordReset = useAuth((state) => state.requestPasswordReset);
 
   async function submit() {
     if (!email.includes('@')) {
@@ -23,10 +23,10 @@ export function ForgotScreen({ navigation }: { navigation: Nav }) {
     }
     setLoading(true);
     try {
-      await requestResetApi(email.trim());
+      await requestPasswordReset(email.trim());
       setSent(true);
     } catch (error: unknown) {
-      Alert.alert('Reset failed', extractApiErrorMessage(error, 'Unable to send reset link right now.'));
+      Alert.alert('Reset unavailable', error instanceof Error ? error.message : 'Password reset is not available right now.');
     } finally {
       setLoading(false);
     }
