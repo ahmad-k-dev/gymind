@@ -9,12 +9,14 @@ namespace GYMIND.API.Data.Configuration
         public void Configure(EntityTypeBuilder<Announcement> entity)
         {
             entity.ToTable("announcement");
-            entity.ToTable("announcements"); // تأكد من اسم الجدول الفعلي
+            
 
             entity.HasKey(a => a.AnnouncementID);
 
             entity.Property(a => a.AnnouncementID)
                 .HasColumnName("announcementid");
+
+            // entity.Property(a => a.UserID).HasColumnName("userid");
 
             entity.Property(a => a.GymBranchID)
                 .HasColumnName("gymbranchid")
