@@ -55,6 +55,8 @@ export function StatsScreen() {
   const weeklyActivity = useStats((state) => state.weeklyActivity);
   const attendance30 = useStats((state) => state.attendance30);
   const linkedGym = useStats((state) => state.linkedGym);
+  const loading = useStats((state) => state.loading);
+  const error = useStats((state) => state.error);
   const hydrateStats = useStats((state) => state.hydrateStats);
 
   React.useEffect(() => {
@@ -80,6 +82,7 @@ export function StatsScreen() {
   }, [navigation]);
 
   const goToLinkedGym = React.useCallback(() => {
+    if (!linkedGym.id) return;
     navigation.navigate('HomeTab', { screen: 'GymProfile', params: { gymId: linkedGym.id } });
   }, [linkedGym.id, navigation]);
 
@@ -94,15 +97,20 @@ export function StatsScreen() {
           ))}
         </View>
 
+        {loading && <Text style={[s.statusTxt, { color: TC.muted }]}>Refreshing stats…</Text>}
+        {!!error && <Text style={[s.statusTxt, { color: '#F87171' }]}>{error}</Text>}
+
         <View style={s.sectionPad}>
           <WeeklyActivity points={weeklyActivity} />
         </View>
         <View style={s.sectionPad}>
           <Attendance30Days days={attendance30} />
         </View>
-        <View style={s.sectionPad}>
-          <LinkedGymCard gym={linkedGym} onPress={goToLinkedGym} />
-        </View>
+        {linkedGym.id ? (
+          <View style={s.sectionPad}>
+            <LinkedGymCard gym={linkedGym} onPress={goToLinkedGym} />
+          </View>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -117,6 +125,7 @@ const s = StyleSheet.create({
     gap: S.sm,
   },
   sectionPad: { paddingHorizontal: S.lg },
+  statusTxt: { paddingHorizontal: S.lg, fontSize: F.sm, fontWeight: '600' },
   statCard: {
     flex: 1,
     borderWidth: 1,

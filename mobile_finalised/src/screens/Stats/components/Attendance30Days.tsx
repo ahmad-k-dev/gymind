@@ -21,6 +21,7 @@ const AttendanceCell = React.memo(function AttendanceCell({
 
 export const Attendance30Days = React.memo(function Attendance30Days({ days }: Attendance30DaysProps) {
   const TC = useThemeColors();
+  const hasData = days.length > 0;
   const presentCount = React.useMemo(() => days.filter((d) => d.attended).length, [days]);
 
   const renderItem = React.useCallback<ListRenderItem<AttendanceDay>>(
@@ -31,34 +32,42 @@ export const Attendance30Days = React.memo(function Attendance30Days({ days }: A
   const keyExtractor = React.useCallback((item: AttendanceDay) => item.date, []);
 
   return (
-    <View style={[s.card, { borderColor: TC.primary + '29', backgroundColor: TC.surface }]}>
+    <View style={[s.card, { borderColor: TC.primary + '29', backgroundColor: TC.surface }]}> 
       <View style={s.head}>
         <Text style={[s.title, { color: TC.muted }]}>Attendance Diagram</Text>
         <Text style={[s.last30, { color: TC.primary }]}>Last 30 Days</Text>
       </View>
 
-      <FlatList
-        data={days}
-        numColumns={10}
-        keyExtractor={keyExtractor}
-        renderItem={renderItem}
-        scrollEnabled={false}
-        columnWrapperStyle={s.row}
-        contentContainerStyle={s.grid}
-      />
+      {hasData ? (
+        <>
+          <FlatList
+            data={days}
+            numColumns={10}
+            keyExtractor={keyExtractor}
+            renderItem={renderItem}
+            scrollEnabled={false}
+            columnWrapperStyle={s.row}
+            contentContainerStyle={s.grid}
+          />
 
-      <View style={s.legend}>
-        <View style={s.legendItem}>
-          <View style={[s.legendDot, { backgroundColor: TC.primary + 'CC' }]} />
-          <Text style={[s.legendText, { color: TC.muted }]}>Present</Text>
-        </View>
-        <View style={s.legendItem}>
-          <View style={[s.legendDot, { backgroundColor: TC.primary + '22' }]} />
-          <Text style={[s.legendText, { color: TC.muted }]}>Absent</Text>
-        </View>
-      </View>
+          <View style={s.legend}>
+            <View style={s.legendItem}>
+              <View style={[s.legendDot, { backgroundColor: TC.primary + 'CC' }]} />
+              <Text style={[s.legendText, { color: TC.muted }]}>Present</Text>
+            </View>
+            <View style={s.legendItem}>
+              <View style={[s.legendDot, { backgroundColor: TC.primary + '22' }]} />
+              <Text style={[s.legendText, { color: TC.muted }]}>Absent</Text>
+            </View>
+          </View>
 
-      <Text style={[s.note, { color: TC.muted }]}>"Consistency is key. {presentCount} visits this month."</Text>
+          <Text style={[s.note, { color: TC.muted }]}>{`Consistency is key. ${presentCount} visits this month.`}</Text>
+        </>
+      ) : (
+        <View style={s.emptyWrap}>
+          <Text style={[s.note, { color: TC.muted }]}>No attendance data yet.</Text>
+        </View>
+      )}
     </View>
   );
 });
@@ -81,4 +90,5 @@ const s = StyleSheet.create({
   legendDot: { width: 11, height: 11, borderRadius: 3 },
   legendText: { fontSize: F.xs, fontWeight: '700' },
   note: { marginTop: 6, textAlign: 'center', fontSize: F.xs, fontStyle: 'italic' },
+  emptyWrap: { minHeight: 80, alignItems: 'center', justifyContent: 'center' },
 });

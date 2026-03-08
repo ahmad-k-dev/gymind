@@ -13,6 +13,7 @@ import { C, S, R, F, useThemeColors } from '../../theme';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { HomeStack } from '../../navigation/types';
 import { selectIsSessionActive, useActiveSession } from '../../features/session/sessionSlice';
+import { useMembership } from '../../features/membership/membershipSlice';
 
 type Props = NativeStackScreenProps<HomeStack, 'CheckIn'>;
 
@@ -25,6 +26,10 @@ export function CheckInScreen({ navigation, route }: Props) {
   const activeSessionId = useActiveSession((state) => state.sessionId);
   const startSession = useActiveSession((state) => state.startSession);
   const beginCheckIn = useActiveSession((state) => state.beginCheckIn);
+  const membershipCard = useMembership((state) => state.card);
+  const membershipLoading = useMembership((state) => state.loading);
+  const membershipError = useMembership((state) => state.error);
+  const hydrateMembershipCard = useMembership((state) => state.hydrateMembershipCard);
 
   useEffect(() => {
     line.value = withRepeat(
@@ -50,6 +55,10 @@ export function CheckInScreen({ navigation, route }: Props) {
       sessionId: activeSessionId ?? undefined,
     });
   }, [activeGymId, activeSessionId, gymId, isSessionActive, navigation]);
+
+  useEffect(() => {
+    void hydrateMembershipCard();
+  }, [hydrateMembershipCard]);
 
   const onCheckIn = React.useCallback(async () => {
     if (isSessionActive) {
@@ -103,11 +112,13 @@ export function CheckInScreen({ navigation, route }: Props) {
 
         <View style={s.memberBox}>
           <Text style={s.memLabel}>MEMBERSHIP ID</Text>
-          <Text style={s.memId}>#8829-X</Text>
+          <Text style={s.memId}>{membershipCard?.membershipIdDisplay ?? '--'}</Text>
           <View style={s.tierBadge}>
             <MaterialCommunityIcons name="trophy-outline" size={14} color={C.primary} />
-            <Text style={s.tierTxt}>ELITE MEMBER</Text>
+            <Text style={s.tierTxt}>{membershipCard?.badgeText ?? 'MEMBER'}</Text>
           </View>
+          <Text style={s.metaInfo}>{membershipLoading ? 'Loading membership…' : membershipCard ? `${membershipCard.statusText} · Expires ${membershipCard.expiresAtLabel}` : 'No membership found'}</Text>
+          {!!membershipError && <Text style={s.metaError}>{membershipError}</Text>}
         </View>
       </View>
 
@@ -152,5 +163,7 @@ const s = StyleSheet.create({
   actionInner: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   checkBtnTxt: { color: '#fff', fontSize: F.lg, fontWeight: '900' },
   hint: { textAlign: 'center', fontSize: F.xs, color: C.muted },
+  metaInfo: { fontSize: F.xs, color: C.muted, fontWeight: '600' },
+  metaError: { fontSize: F.xs, color: '#F87171', textAlign: 'center' },
 });
 

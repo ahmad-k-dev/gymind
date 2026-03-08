@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import type { AttendanceDay, LinkedGym, WeeklyActivityPoint } from '../types/stats';
-import { ATTENDANCE_LAST_30_DAYS, LINKED_GYM, WEEKLY_ACTIVITY } from '../data/mockStats';
 import { getMyHistoryApi } from '../services/api/sessionApi';
 import { getMyMembershipsApi } from '../services/api/membershipApi';
 import { buildComputedStats, mapLinkedGymFromMembership } from '../services/api/mappers';
@@ -16,9 +15,9 @@ interface StatsStore {
 }
 
 export const useStats = create<StatsStore>((set) => ({
-  weeklyActivity: WEEKLY_ACTIVITY,
-  attendance30: ATTENDANCE_LAST_30_DAYS,
-  linkedGym: LINKED_GYM,
+  weeklyActivity: [],
+  attendance30: [],
+  linkedGym: { id: '', name: 'No linked gym' },
   loading: false,
   error: '',
 
@@ -32,7 +31,7 @@ export const useStats = create<StatsStore>((set) => ({
       set({
         weeklyActivity: computed.weeklyMinutes as readonly WeeklyActivityPoint[],
         attendance30: computed.attendanceLast30 as readonly AttendanceDay[],
-        linkedGym: mappedLinkedGym ?? LINKED_GYM,
+        linkedGym: mappedLinkedGym ?? { id: '', name: 'No linked gym' },
         loading: false,
       });
     } catch {

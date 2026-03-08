@@ -14,8 +14,12 @@ export const WeeklyActivity = React.memo(function WeeklyActivity({ points }: Wee
     return (jsDay + 6) % 7;
   }, []);
   const [selectedDayIndex, setSelectedDayIndex] = React.useState(defaultDayIndex);
+  const hasData = points.length > 0;
   const maxValue = React.useMemo(() => Math.max(...points.map((p) => p.value), 1), [points]);
-  const avgHours = React.useMemo(() => points.reduce((acc, p) => acc + p.value, 0) / 60 / points.length, [points]);
+  const avgHours = React.useMemo(() => {
+    if (points.length === 0) return 0;
+    return points.reduce((acc, p) => acc + p.value, 0) / 60 / points.length;
+  }, [points]);
 
   return (
     <View style={[s.card, { borderColor: TC.primary + '29', backgroundColor: TC.surface }]}>
@@ -26,6 +30,7 @@ export const WeeklyActivity = React.memo(function WeeklyActivity({ points }: Wee
           <Text style={[s.legendText, { color: TC.muted }]}>Avg {avgHours.toFixed(1)}h / Day</Text>
         </View>
       </View>
+      {hasData ? (
       <View style={s.chart}>
         {points.map((point, idx) => {
           const heightPct = Math.max(8, (point.value / maxValue) * 100);
@@ -54,6 +59,11 @@ export const WeeklyActivity = React.memo(function WeeklyActivity({ points }: Wee
           );
         })}
       </View>
+      ) : (
+        <View style={s.emptyWrap}>
+          <Text style={[s.emptyTxt, { color: TC.muted }]}>No activity data yet.</Text>
+        </View>
+      )}
     </View>
   );
 });
@@ -82,4 +92,6 @@ const s = StyleSheet.create({
   },
   bar: { width: '100%', borderTopLeftRadius: 8, borderTopRightRadius: 8 },
   day: { fontSize: 10, fontWeight: '800' },
+  emptyWrap: { height: 110, alignItems: 'center', justifyContent: 'center' },
+  emptyTxt: { fontSize: F.sm, fontWeight: '600' },
 });
