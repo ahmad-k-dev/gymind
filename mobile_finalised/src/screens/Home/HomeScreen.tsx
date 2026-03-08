@@ -25,6 +25,7 @@ import Animated, {
 import { useAuth } from '../../store/auth';
 import { useGyms } from '../../store/gyms';
 import { useUI } from '../../store/ui';
+import { selectUnreadNotificationsCount, useNotifications } from '../../features/notifications/notificationsSlice';
 import { C, S, R, F, useThemeColors } from '../../theme';
 import { AppLogo } from '../../components/ui/AppLogo';
 import { AnnouncementBanner } from '../../components/ui/AnnouncementBanner';
@@ -128,7 +129,8 @@ export function HomeScreen({ navigation }: { navigation: Nav }) {
   const rootNavigation = useNavigation<NativeStackNavigationProp<RootStack>>();
   const user = useAuth((s) => s.user);
   const { gyms, loading, fetchGyms, select, search, results } = useGyms();
-  const notif = useUI((s) => s.notifications);
+  const notif = useNotifications(selectUnreadNotificationsCount);
+  const hydrateNotifications = useNotifications((state) => state.hydrateNotifications);
   const location = useUI((s) => s.location);
   const announcement = useAnnouncement(selectVisibleAnnouncement);
   const dismissAnnouncement = useAnnouncement((s) => s.dismissAnnouncement);
@@ -139,13 +141,14 @@ export function HomeScreen({ navigation }: { navigation: Nav }) {
 
   useEffect(() => {
     fetchGyms();
+    void hydrateNotifications();
     pinY.value = withSpring(0, { damping: 8 });
     notifScale.value = withRepeat(
       withSequence(withTiming(1.25, { duration: 700 }), withTiming(1, { duration: 700 })),
       3,
       false
     );
-  }, [fetchGyms, notifScale, pinY]);
+  }, [fetchGyms, hydrateNotifications, notifScale, pinY]);
 
   const pinStyle = useAnimatedStyle(() => ({ transform: [{ translateY: pinY.value }] }));
   const badgeStyle = useAnimatedStyle(() => ({ transform: [{ scale: notifScale.value }] }));
@@ -206,7 +209,7 @@ export function HomeScreen({ navigation }: { navigation: Nav }) {
               </View>
             </View>
           </View>
-          <TouchableOpacity style={hs.bell}>
+          <TouchableOpacity style={hs.bell} onPress={() => navigation.navigate('Notifications')}>
             <MaterialCommunityIcons name="bell-outline" size={22} color={TC.text} />
             {notif > 0 && (
               <Animated.View style={[hs.notifDot, badgeStyle]}>

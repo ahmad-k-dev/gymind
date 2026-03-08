@@ -15,10 +15,18 @@ export const API_ENDPOINTS = {
   },
   membership: {
     myMemberships: '/membership/my-memberships',
+    details: (membershipId: string) => `/membership/${membershipId}/details`,
   },
   session: {
     checkIn: '/gymsession/check-in',
     checkOut: '/gymsession/check-out',
     myHistory: '/gymsession/my-history',
+  },
+  announcements: {
+    me: '/announcements/me',
+  },
+  notifications: {
+    me: '/notifications/me',
+    markAsRead: (notificationId: string) => `/notifications/${notificationId}/read`,
   },
 } as const;

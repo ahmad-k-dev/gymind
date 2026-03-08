@@ -99,6 +99,7 @@ namespace GYMIND.API.Services
 
             var userNotifications = users.Select(userID => new UserNotification
             {
+                UserNotificationID = Guid.NewGuid(),
                 UserID = userID,
                 NotificationID = notification.NotificationID,
                 ReadStatus = false
