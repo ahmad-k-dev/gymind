@@ -65,3 +65,24 @@ export interface BackendErrorResponse {
   detail?: string;
   errors?: Record<string, string[]>;
 }
+
+
+export interface BackendAnnouncementDto {
+  announcementID: string;
+  gymBranchID: string;
+  title: string;
+  content: string;
+  createdAt: string;
+  expiresAt?: string | null;
+}
+
+export interface BackendNotificationDto {
+  notificationID: string;
+  title: string;
+  message: string;
+  sentAt: string;
+  gymId?: string | null;
+  gymBranchID?: string | null;
+  isRead: boolean;
+  readAt?: string | null;
+}

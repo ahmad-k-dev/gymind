@@ -18,6 +18,7 @@ export type HomeStack = {
   GymProfile: { gymId: string };
   CheckIn: { gymId: string };
   Session: { gymId: string; sessionId?: string };
+  Notifications: undefined;
 };
 export type TabStack = {
   HomeTab: NavigatorScreenParams<HomeStack> | undefined;

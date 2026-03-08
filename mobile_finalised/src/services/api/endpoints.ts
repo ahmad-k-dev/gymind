@@ -21,4 +21,11 @@ export const API_ENDPOINTS = {
     checkOut: '/gymsession/check-out',
     myHistory: '/gymsession/my-history',
   },
+  announcements: {
+    me: '/announcements/me',
+  },
+  notifications: {
+    me: '/notifications/me',
+    markAsRead: (notificationId: string) => `/notifications/${notificationId}/read`,
+  },
 } as const;

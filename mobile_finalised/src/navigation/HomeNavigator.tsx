@@ -5,6 +5,7 @@ import { HomeScreen } from '../screens/Home/HomeScreen';
 import { GymProfileScreen } from '../screens/GymProfile/GymProfileScreen';
 import { CheckInScreen } from '../screens/CheckIn/CheckInScreen';
 import { SessionScreen } from '../screens/ActiveSession/SessionScreen';
+import { NotificationsScreen } from '../screens/Profile/NotificationsScreen';
 
 const Stack = createNativeStackNavigator<HomeStack>();
 
@@ -15,6 +16,7 @@ export function HomeNavigator() {
       <Stack.Screen name="GymProfile" component={GymProfileScreen} />
       <Stack.Screen name="CheckIn" component={CheckInScreen} />
       <Stack.Screen name="Session" component={SessionScreen} />
+      <Stack.Screen name="Notifications" component={NotificationsScreen} />
     </Stack.Navigator>
   );
 }
