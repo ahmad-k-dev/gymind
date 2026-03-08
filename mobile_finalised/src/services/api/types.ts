@@ -86,3 +86,14 @@ export interface BackendNotificationDto {
   isRead: boolean;
   readAt?: string | null;
 }
+
+
+export interface BackendMembershipDisplayDto {
+  membershipID: string;
+  gymName: string;
+  branchName?: string | null;
+  joinedAt: string;
+  expiryDate?: string | null;
+  isActive: boolean;
+  description?: string | null;
+}

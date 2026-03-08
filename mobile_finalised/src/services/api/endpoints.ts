@@ -15,6 +15,7 @@ export const API_ENDPOINTS = {
   },
   membership: {
     myMemberships: '/membership/my-memberships',
+    details: (membershipId: string) => `/membership/${membershipId}/details`,
   },
   session: {
     checkIn: '/gymsession/check-in',
