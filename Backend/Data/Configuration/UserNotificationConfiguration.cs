@@ -11,7 +11,7 @@ namespace GYMIND.API.Data.Configuration
             entity.HasKey(un => un.UserNotificationID);
 
             entity.Property(un => un.UserNotificationID).HasColumnName("usernotificationid");
-            entity.Property(e => e.UserID).HasColumnName("userid");
+            entity.Property(un => un.UserID).HasColumnName("userid");
             entity.Property(un => un.NotificationID).HasColumnName("notificationid");
             entity.Property(un => un.ReadStatus).HasColumnName("readstatus").HasDefaultValue(false);
             entity.Property(un => un.ReadAt).HasColumnName("readat");
