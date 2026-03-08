@@ -12,6 +12,7 @@ import { BottomTabs } from './BottomTabs';
 import { ProfileNavigator } from './ProfileNavigator';
 import { useThemeColors } from '../theme';
 import { useActiveSession } from '../features/session/sessionSlice';
+import { useNotifications } from '../features/notifications/notificationsSlice';
 import { AIScreen } from '../screens/AIAssistant/AIScreen';
 
 const Stack = createNativeStackNavigator<RootStack>();
@@ -22,18 +23,23 @@ export function RootNavigator() {
   const { onboarded, loadOnboarded, loadPreferences } = useUI();
   const loadAnnouncement = useAnnouncement(s => s.loadAnnouncement);
   const hydrateActiveSession = useActiveSession((state) => state.hydrateActiveSession);
+  const hydrateNotifications = useNotifications((state) => state.hydrateNotifications);
   const TC = useThemeColors();
   const opts = { headerShown: false, contentStyle: { backgroundColor: TC.bg } };
 
   useEffect(() => {
-    Promise.all([
-      init(),
-      loadOnboarded(),
-      loadPreferences(),
-      loadAnnouncement(),
-      hydrateActiveSession(),
-    ]).finally(() => setReady(true));
-  }, [hydrateActiveSession, init, loadAnnouncement, loadOnboarded, loadPreferences]);
+    (async () => {
+      await init();
+      await Promise.allSettled([
+        loadOnboarded(),
+        loadPreferences(),
+        loadAnnouncement(),
+        hydrateActiveSession(),
+        hydrateNotifications(),
+      ]);
+      setReady(true);
+    })();
+  }, [hydrateActiveSession, hydrateNotifications, init, loadAnnouncement, loadOnboarded, loadPreferences]);
 
   if (!ready) return <BootScreen />;
 
