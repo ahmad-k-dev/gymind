@@ -30,5 +30,6 @@ export type TabStack = {
 export type ProfileStack = {
   Profile: undefined; 
   EditProfile: undefined; 
+  ChangePassword: undefined;
   Settings: undefined;
 };

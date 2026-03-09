@@ -38,6 +38,7 @@ export interface User {
   avatarUrl: string;
   biography?: string;
   medicalConditions?: string;
+  emergencyContact?: string;
   fitnessGoal?: string;
   trainingFrequencyPerWeek?: number;
   assessmentNotes?: string;

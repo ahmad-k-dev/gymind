@@ -25,6 +25,11 @@ export interface RefreshTokenRequestDto {
   RefreshToken: string;
 }
 
+export interface ForgotPasswordResponseDto {
+  message: string;
+  developmentResetToken?: string;
+}
+
 export interface BackendGymDto {
   gymID: string;
   name: string;
@@ -39,6 +44,12 @@ export interface BackendGetUserDto {
   email: string;
   phone?: string | null;
   createdAt: string;
+  biography?: string | null;
+  medicalConditions?: string | null;
+  emergencyContact?: string | null;
+  profilePictureUrl?: string | null;
+  height?: number | null;
+  weight?: number | null;
   roles: number[];
 }
 

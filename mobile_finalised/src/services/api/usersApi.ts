@@ -7,6 +7,8 @@ export interface EditProfilePayload {
   biography?: string;
   medicalConditions?: string;
   emergencyContact?: string;
+  height?: string;
+  weight?: string;
 }
 
 export interface UploadAvatarPayload {
@@ -27,6 +29,8 @@ export async function editProfileApi(payload: EditProfilePayload): Promise<void>
   if (payload.biography) form.append('Biography', payload.biography);
   if (payload.medicalConditions) form.append('MedicalConditions', payload.medicalConditions);
   if (payload.emergencyContact) form.append('EmergencyContact', payload.emergencyContact);
+  if (payload.height) form.append('Height', payload.height);
+  if (payload.weight) form.append('Weight', payload.weight);
 
   await apiClient.patch(API_ENDPOINTS.users.editProfile, form, {
     headers: { 'Content-Type': 'multipart/form-data' },

@@ -56,9 +56,12 @@ export function mapUserFromBackend(dto: BackendGetUserDto): User {
     phone: dto.phone ?? '',
     membershipNumber: dto.userID.slice(0, 8).toUpperCase(),
     age: 0,
-    heightCm: 0,
-    weightKg: 0,
-    avatarUrl: '',
+    heightCm: dto.height ? Number(dto.height) : 0,
+    weightKg: dto.weight ? Number(dto.weight) : 0,
+    avatarUrl: dto.profilePictureUrl ?? '',
+    biography: dto.biography ?? '',
+    medicalConditions: dto.medicalConditions ?? '',
+    emergencyContact: dto.emergencyContact ?? '',
   };
 }
 
@@ -138,14 +141,23 @@ export function mapUserPatchToBackendPayload(payload: {
   name: string;
   biography?: string;
   medicalConditions?: string;
+  emergencyContact?: string;
+  heightCm?: number;
+  weightKg?: number;
 }): {
   fullName?: string;
   biography?: string;
   medicalConditions?: string;
+  emergencyContact?: string;
+  height?: string;
+  weight?: string;
 } {
   return {
     fullName: payload.name,
     biography: payload.biography,
     medicalConditions: payload.medicalConditions,
+    emergencyContact: payload.emergencyContact,
+    height: payload.heightCm ? String(payload.heightCm) : undefined,
+    weight: payload.weightKg ? String(payload.weightKg) : undefined,
   };
 }

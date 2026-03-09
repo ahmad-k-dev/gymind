@@ -3,7 +3,7 @@ import type { User } from "../types";
 import * as SecureStore from "expo-secure-store";
 
 import { registerAuthContext } from "../services/api/api";
-import { loginApi, registerApi, requestResetApi } from "../services/api/authApi";
+import { loginApi, registerApi, requestResetApi, resetPasswordApi } from "../services/api/authApi";
 import { clearStoredTokens, getStoredTokens, setStoredTokens } from "../services/api/tokenStorage";
 import { getUserApi, editProfileApi, uploadAvatarApi } from "../services/api/usersApi";
 import { mapUserFromBackend, mapUserPatchToBackendPayload } from "../services/api/mappers";
@@ -16,6 +16,9 @@ interface UpdateProfilePayload {
   name: string;
   biography?: string;
   medicalConditions?: string;
+  emergencyContact?: string;
+  heightCm?: number;
+  weightKg?: number;
 }
 
 interface AuthStore {
@@ -45,7 +48,8 @@ interface AuthStore {
   updateAvatar: (uri: string) => Promise<void>;
 
   setTokens: (token: string, refreshToken: string, userId?: string | null) => Promise<void>;
-  requestPasswordReset: (email: string) => Promise<void>;
+  requestPasswordReset: (email: string) => Promise<string | null>;
+  resetPassword: (token: string, newPassword: string) => Promise<void>;
   clearErr: () => void;
 }
 
@@ -213,6 +217,9 @@ export const useAuth = create<AuthStore>((set, get) => ({
               name: payload.name,
               biography: payload.biography ?? state.user.biography,
               medicalConditions: payload.medicalConditions ?? state.user.medicalConditions,
+              emergencyContact: payload.emergencyContact ?? state.user.emergencyContact,
+              heightCm: payload.heightCm ?? state.user.heightCm,
+              weightKg: payload.weightKg ?? state.user.weightKg,
             }
           : state.user,
       }));
@@ -251,10 +258,23 @@ export const useAuth = create<AuthStore>((set, get) => ({
   requestPasswordReset: async (email) => {
     set({ loading: true, error: "" });
     try {
-      await requestResetApi(email);
+      const response = await requestResetApi(email);
+      set({ loading: false });
+      return response?.developmentResetToken ?? null;
+    } catch (error: unknown) {
+      const msg = extractApiErrorMessage(error, "Failed to request password reset.");
+      set({ loading: false, error: msg });
+      throw new Error(msg);
+    }
+  },
+
+  resetPassword: async (token, newPassword) => {
+    set({ loading: true, error: "" });
+    try {
+      await resetPasswordApi(token, newPassword);
       set({ loading: false });
     } catch (error: unknown) {
-      const msg = extractApiErrorMessage(error, "Password reset is not available yet.");
+      const msg = extractApiErrorMessage(error, "Failed to reset password.");
       set({ loading: false, error: msg });
       throw new Error(msg);
     }

@@ -10,7 +10,6 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../store/auth';
 import { C, S, R, F, useThemeColors } from '../../theme';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -28,7 +27,6 @@ interface MenuItem {
 export function ProfileScreen({ navigation }: { navigation: Nav }) {
   const TC = useThemeColors();
   const { user, logout } = useAuth();
-  const updateAvatar = useAuth((s) => s.updateAvatar);
   const avatarAnim = useSharedValue(0);
   const [showPersonalInfo, setShowPersonalInfo] = React.useState(false);
   const bmi =
@@ -49,31 +47,9 @@ export function ProfileScreen({ navigation }: { navigation: Nav }) {
     borderRadius: interpolate(avatarAnim.value, [0, 1], [16, 35]),
   }));
 
-  const pickAvatar = React.useCallback(async () => {
-    try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permission.granted) {
-        updateAvatar('');
-        Alert.alert(
-          'Permission denied',
-          'Media library permission was denied. Placeholder avatar will be shown.'
-        );
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-
-      if (result.canceled || !result.assets.length) return;
-      updateAvatar(result.assets[0].uri);
-    } catch {
-      Alert.alert('Avatar update failed', 'Please try selecting an image again.');
-    }
-  }, [updateAvatar]);
+  const pickAvatar = React.useCallback(() => {
+    navigation.navigate('EditProfile');
+  }, [navigation]);
 
   const menuItems: MenuItem[] = [
     { label: 'Settings', icon: 'cog-outline', action: () => navigation.navigate('Settings') },
@@ -132,25 +108,28 @@ export function ProfileScreen({ navigation }: { navigation: Nav }) {
           {showPersonalInfo && (
             <View style={s.infoCard}>
               {[
+                ['Full Name', user?.name || '-'],
+                ['Email', user?.email || '-'],
+                ['Phone', user?.phone || '-'],
                 ['Height', user?.heightCm ? `${user.heightCm} cm` : '-'],
                 ['Weight', user?.weightKg ? `${user.weightKg} kg` : '-'],
                 ['BMI', bmi > 0 ? bmi.toFixed(1) : '-'],
-                ['Fitness Goal', user?.fitnessGoal || '-'],
-                [
-                  'Training Frequency',
-                  user?.trainingFrequencyPerWeek || user?.trainingFrequencyPerWeek === 0
-                    ? `${user.trainingFrequencyPerWeek}/week`
-                    : '-',
-                ],
                 ['Medical Conditions', user?.medicalConditions || '-'],
+                ['Emergency Contact', user?.emergencyContact || '-'],
                 ['Biography', user?.biography || '-'],
-                ['Assessment Feedback', user?.assessmentNotes || '-'],
               ].map(([label, value]) => (
                 <View key={String(label)} style={s.infoRow}>
                   <Text style={s.infoLabel}>{label}</Text>
                   <Text style={[s.infoValue, { color: TC.text }]}>{value}</Text>
                 </View>
               ))}
+              <TouchableOpacity
+                style={s.changePasswordBtn}
+                onPress={() => navigation.navigate('ChangePassword')}
+              >
+                <MaterialCommunityIcons name="lock-reset" size={16} color={C.primary} />
+                <Text style={s.changePasswordTxt}>Change Password</Text>
+              </TouchableOpacity>
             </View>
           )}
         </View>
@@ -248,6 +227,20 @@ const s = StyleSheet.create({
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: S.sm },
   infoLabel: { fontSize: F.sm, color: C.muted, fontWeight: '700' },
   infoValue: { flex: 1, textAlign: 'right', fontSize: F.sm, color: '#fff', fontWeight: '700' },
+  changePasswordBtn: {
+    marginTop: S.xs,
+    alignSelf: 'flex-end',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: C.surface2,
+    borderWidth: 1,
+    borderColor: C.primary + '44',
+    borderRadius: R.md,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  changePasswordTxt: { color: C.primary, fontSize: F.sm, fontWeight: '800' },
   menuItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',

@@ -3,7 +3,7 @@ export const API_ENDPOINTS = {
     login: '/auth/login',
     register: '/auth/register',
     refresh: '/auth/refresh',
-    requestPasswordReset: '/auth/request-password-reset',
+    requestPasswordReset: '/auth/forgot-password',
     resetPassword: '/auth/reset-password',
   },
   users: {

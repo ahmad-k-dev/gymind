@@ -97,12 +97,87 @@ namespace GYMIND.API.Service
             };
         }
 
+
+        public async Task<string?> RequestPasswordResetAsync(string email)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+                return null;
+
+            var normalizedEmail = email.Trim().ToLowerInvariant();
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail && u.IsActive);
+            if (user == null)
+                return null;
+
+            var rawToken = GenerateUrlSafeToken();
+            var hashedToken = HashToken(rawToken);
+            user.RefreshToken = $"pwdreset:{hashedToken}";
+            user.RefreshTokenExpiry = DateTime.UtcNow.AddMinutes(15);
+
+            await _context.SaveChangesAsync();
+
+            // TODO: replace with real email provider integration.
+            Console.WriteLine($"Password reset token for {user.Email}: {rawToken}");
+            return rawToken;
+        }
+
+        public async Task<bool> ResetPasswordAsync(ResetPasswordRequestDto dto)
+        {
+            if (dto == null || string.IsNullOrWhiteSpace(dto.Token) || string.IsNullOrWhiteSpace(dto.NewPassword))
+                return false;
+
+            if (!IsStrongPassword(dto.NewPassword))
+                return false;
+
+            var hashedToken = HashToken(dto.Token.Trim());
+            var expectedValue = $"pwdreset:{hashedToken}";
+            var user = await _context.Users.FirstOrDefaultAsync(u =>
+                u.RefreshToken == expectedValue &&
+                u.RefreshTokenExpiry.HasValue &&
+                u.RefreshTokenExpiry > DateTime.UtcNow &&
+                u.IsActive);
+
+            if (user == null)
+                return false;
+
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+            user.RefreshToken = null;
+            user.RefreshTokenExpiry = null;
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
         private string GenerateRefreshToken()
         {
             var randomNumber = new byte[64];
             using var rng = RandomNumberGenerator.Create();
             rng.GetBytes(randomNumber);
             return Convert.ToBase64String(randomNumber);
+        }
+
+
+        private static string GenerateUrlSafeToken()
+        {
+            var bytes = RandomNumberGenerator.GetBytes(32);
+            return Convert.ToBase64String(bytes).Replace("+", "-").Replace("/", "_").TrimEnd('=');
+        }
+
+        private static string HashToken(string token)
+        {
+            var tokenBytes = System.Text.Encoding.UTF8.GetBytes(token);
+            var hashBytes = SHA256.HashData(tokenBytes);
+            return Convert.ToHexString(hashBytes);
+        }
+
+        private static bool IsStrongPassword(string password)
+        {
+            if (password.Length < 8) return false;
+            var hasUpper = password.Any(char.IsUpper);
+            var hasLower = password.Any(char.IsLower);
+            var hasDigit = password.Any(char.IsDigit);
+            var hasSpecial = password.Any(c => !char.IsLetterOrDigit(c));
+
+            return hasUpper && hasLower && hasDigit && hasSpecial;
         }
 
         public async Task<IEnumerable<GetUserDto>> GetAllUsersAsync()
@@ -116,6 +191,12 @@ namespace GYMIND.API.Service
                     Email = u.Email,
                     Phone = u.Phone,
                     CreatedAt = u.CreatedAt,
+                    Biography = u.Biography,
+                    MedicalConditions = u.MedicalConditions,
+                    EmergencyContact = u.EmergencyContact,
+                    Height = u.Height,
+                    Weight = u.Weight,
+                    ProfilePictureUrl = u.ProfilePictureUrl,
                     Roles = u.UserRole.Select(ur => ur.RoleID).ToList()
 
                 })
@@ -138,6 +219,12 @@ namespace GYMIND.API.Service
                 Email = user.Email,
                 Phone = user.Phone,
                 CreatedAt = user.CreatedAt,
+                Biography = user.Biography,
+                MedicalConditions = user.MedicalConditions,
+                EmergencyContact = user.EmergencyContact,
+                Height = user.Height,
+                Weight = user.Weight,
+                ProfilePictureUrl = user.ProfilePictureUrl,
                 Roles = user.UserRole.Select(ur => ur.RoleID).ToList()
             };
         }
@@ -206,6 +293,12 @@ namespace GYMIND.API.Service
                 Email = user.Email,
                 Phone = user.Phone,
                 CreatedAt = user.CreatedAt,
+                Biography = user.Biography,
+                MedicalConditions = user.MedicalConditions,
+                EmergencyContact = user.EmergencyContact,
+                Height = user.Height,
+                Weight = user.Weight,
+                ProfilePictureUrl = user.ProfilePictureUrl,
                 Roles = user.UserRole.Select(ur => ur.RoleID).ToList(),
             };
         }
@@ -294,6 +387,10 @@ namespace GYMIND.API.Service
             user.Biography = dto.Biography ?? user.Biography;
             user.MedicalConditions = dto.MedicalConditions ?? user.MedicalConditions;
             user.EmergencyContact = dto.EmergencyContact ?? user.EmergencyContact;
+            if (!string.IsNullOrWhiteSpace(dto.Height) && decimal.TryParse(dto.Height, out var height))
+                user.Height = height;
+            if (!string.IsNullOrWhiteSpace(dto.Weight) && decimal.TryParse(dto.Weight, out var weight))
+                user.Weight = weight;
 
             _context.Entry(user).State = EntityState.Modified;
 

@@ -2,6 +2,7 @@ import { apiClient } from './api';
 import { API_ENDPOINTS } from './endpoints';
 import type {
   CreateUserDto,
+  ForgotPasswordResponseDto,
   LoginRequestDto,
   RefreshTokenRequestDto,
   TokenExchangeRequestDto,
@@ -21,10 +22,16 @@ export async function refreshApi(payload: RefreshTokenRequestDto): Promise<Token
   return data;
 }
 
-export async function requestResetApi(_email: string): Promise<void> {
-  throw new Error('Password reset is not available yet. Please contact support.');
+export async function requestResetApi(email: string): Promise<ForgotPasswordResponseDto> {
+  const { data } = await apiClient.post<ForgotPasswordResponseDto>(API_ENDPOINTS.auth.requestPasswordReset, {
+    email,
+  });
+  return data;
 }
 
-export async function resetPasswordApi(_token: string, _newPassword: string): Promise<void> {
-  throw new Error('Password reset is not available yet. Please contact support.');
+export async function resetPasswordApi(token: string, newPassword: string): Promise<void> {
+  await apiClient.post(API_ENDPOINTS.auth.resetPassword, {
+    token,
+    newPassword,
+  });
 }

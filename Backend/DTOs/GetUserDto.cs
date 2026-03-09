@@ -10,6 +10,7 @@
         public string? Biography { get; set; }
         public string? MedicalConditions { get; set; }
         public string? EmergencyContact { get; set; }
+        public string? ProfilePictureUrl { get; set; }
         public decimal? Height { get; set; }
         public decimal? Weight { get; set; }
         public List<int> Roles { get; set; } = new();
