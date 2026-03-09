@@ -28,15 +28,15 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
             entity.Property(u => u.EmergencyContact).HasColumnName("emergencycontact");// new column
             entity.Property(u => u.RefreshToken).HasColumnName("refreshtoken");// new column
             entity.Property(u => u.RefreshTokenExpiry).HasColumnName("refreshtokenexpiry");// new column
-            entity.Property(u => u.PasswordResetTokenHash).HasColumnName("passwordresettokenhash");
-            entity.Property(u => u.PasswordResetTokenExpiry).HasColumnName("passwordresettokenexpiry");
-            entity.Property(u => u.PasswordResetRequestedAt).HasColumnName("passwordresetrequestedat");
+            //entity.Property(u => u.PasswordResetTokenHash).HasColumnName("passwordresettokenhash");
+            //entity.Property(u => u.PasswordResetTokenExpiry).HasColumnName("passwordresettokenexpiry");
+            //entity.Property(u => u.PasswordResetRequestedAt).HasColumnName("passwordresetrequestedat");
             entity.Property(u => u.Height).HasColumnName("height");// new column
             entity.Property(u => u.Weight).HasColumnName("weight");// new column
 
             entity.Property(u => u.Location).HasColumnName("location");
             entity.Property(u => u.DateOfBirth).HasColumnName("dateofbirth");
-            // entity.Property(u => u.MembershipID).HasColumnName("membershipid");
+            //entity.Property(u => u.MembershipID).HasColumnName("membershipid");
             entity.Property(u => u.Gender).HasColumnName("gender");
             entity.Property(u => u.CreatedAt).HasColumnName("createdat");
             entity.Property(u => u.IsActive).HasColumnName("isactive").HasDefaultValue(true);
