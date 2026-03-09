@@ -28,6 +28,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
             entity.Property(u => u.EmergencyContact).HasColumnName("emergencycontact");// new column
             entity.Property(u => u.RefreshToken).HasColumnName("refreshtoken");// new column
             entity.Property(u => u.RefreshTokenExpiry).HasColumnName("refreshtokenexpiry");// new column
+            entity.Property(u => u.Height).HasColumnName("height");// new column
+            entity.Property(u => u.Weight).HasColumnName("weight");// new column
 
             entity.Property(u => u.Location).HasColumnName("location");
             entity.Property(u => u.DateOfBirth).HasColumnName("dateofbirth");

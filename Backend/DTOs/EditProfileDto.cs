@@ -14,12 +14,12 @@ namespace GYMIND.API.DTOs
         
         // This receives the image file from the user's phone/local storage.
         public IFormFile? ImageFile { get; set; }
-
-        public string? MedicalConditions { get; set; }
-
+        public string? MedicalConditions { get; set; } 
         public string? EmergencyContact { get; set; }
+        public string? Height { get; set; } 
+        public string? Weight { get; set; } 
 
         // Note: Email and Password are excluded here to handle them through a more secure verification-based flow.
-        
+
     }
 }
