@@ -51,6 +51,27 @@ namespace GYMIND.API.Controllers
             }
         }
 
+
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestDto dto)
+        {
+            if (dto == null || string.IsNullOrWhiteSpace(dto.Email))
+                return BadRequest("Email is required.");
+
+            await _userService.RequestPasswordResetAsync(dto.Email);
+            return Ok(new { message = "If an account exists for this email, a reset link has been sent." });
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestDto dto)
+        {
+            var success = await _userService.ResetPasswordAsync(dto);
+            if (!success)
+                return BadRequest("Invalid token, expired token, or weak password.");
+
+            return Ok(new { message = "Password has been reset successfully." });
+        }
+
         [HttpPost("refresh")]
 
         public async Task<IActionResult> Refresh([FromBody] TokenExchangeRequestDto dto)
