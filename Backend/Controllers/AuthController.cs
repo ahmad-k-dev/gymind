@@ -3,6 +3,7 @@ using GYMIND.API.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
+using System.Net;
 
 namespace GYMIND.API.Controllers
 {
@@ -54,6 +55,24 @@ namespace GYMIND.API.Controllers
         }
 
 
+
+        private bool ShouldExposeResetTokenForRequest()
+        {
+            if (_environment.IsDevelopment())
+                return true;
+
+            var origin = Request.Headers.Origin.ToString();
+            if (string.IsNullOrWhiteSpace(origin))
+                return false;
+
+            if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri))
+                return false;
+
+            return string.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(uri.Host, "127.0.0.1", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(uri.Host, "::1", StringComparison.OrdinalIgnoreCase);
+        }
+
         [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestDto dto)
         {
@@ -62,7 +81,7 @@ namespace GYMIND.API.Controllers
 
             var resetToken = await _userService.RequestPasswordResetAsync(dto.Email);
 
-            if (_environment.IsDevelopment() && !string.IsNullOrWhiteSpace(resetToken))
+            if (ShouldExposeResetTokenForRequest() && !string.IsNullOrWhiteSpace(resetToken))
                 return Ok(new { message = "If an account exists for this email, a reset link has been sent.", developmentResetToken = resetToken });
 
             return Ok(new { message = "If an account exists for this email, a reset link has been sent." });
