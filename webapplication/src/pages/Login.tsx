@@ -52,8 +52,11 @@ const Login = () => {
         body: JSON.stringify({ email }),
       });
 
-      if (!response.ok) throw new Error("Could not request password reset.");
-      const payload = await response.json();
+      const payload = await response.json().catch(() => ({} as Record<string, unknown>));
+      if (!response.ok) {
+        const apiMessage = typeof payload.message === "string" ? payload.message : "Could not request password reset.";
+        throw new Error(apiMessage);
+      }
       const devToken = payload.developmentResetToken as string | undefined;
       if (devToken) {
         setToken(devToken);
