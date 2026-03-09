@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Dimensions, type ListRenderItem } from 'react-native';
-import MaterialCommunityIcons from 'expo/node_modules/@expo/vector-icons/MaterialCommunityIcons';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useUI } from '../../store/ui';
 import { C, S, R, F, useThemeColors } from '../../theme';
 

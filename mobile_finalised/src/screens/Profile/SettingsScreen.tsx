@@ -1,7 +1,7 @@
 import React from 'react';
 import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MaterialCommunityIcons from 'expo/node_modules/@expo/vector-icons/MaterialCommunityIcons';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useUI } from '../../store/ui';
 import { F, R, S, useThemeColors } from '../../theme';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';

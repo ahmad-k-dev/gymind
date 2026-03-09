@@ -3,7 +3,7 @@ import { Image, Platform, StyleSheet, Text, TouchableOpacity, View, useWindowDim
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
-import MaterialCommunityIcons from 'expo/node_modules/@expo/vector-icons/MaterialCommunityIcons';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useThemeColors } from '../theme';
 import { selectIsSessionActive, useActiveSession } from '../features/session/sessionSlice';
