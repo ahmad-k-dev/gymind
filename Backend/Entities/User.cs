@@ -25,17 +25,17 @@ public class User
     public bool HasChangedName { get; set; } = false;
     public string? MedicalConditions { get; set; }
     public string? EmergencyContact { get; set; }
+    public decimal? Height { get; set; } // in centimeters
+    public decimal? Weight { get; set; } // in kilograms
 
     // tokens
     public string? RefreshToken { get; set; }
     public DateTime? RefreshTokenExpiry { get; set; }
+    [NotMapped]
+    public object? Membership { get; set; }
     public string? PasswordResetTokenHash { get; set; }
     public DateTime? PasswordResetTokenExpiry { get; set; }
     public DateTime? PasswordResetRequestedAt { get; set; }
-    public decimal? Height { get; set; }
-    public decimal? Weight { get; set; }
-    [NotMapped]
-    public object? Membership { get; set; }
 
     [NotMapped]
     public object? MembershipID { get; set; }
