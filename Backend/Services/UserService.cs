@@ -97,12 +97,93 @@ namespace GYMIND.API.Service
             };
         }
 
+
+        public async Task<bool> RequestPasswordResetAsync(string email)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+                return true;
+
+            var normalizedEmail = email.Trim().ToLowerInvariant();
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail && u.IsActive);
+            if (user == null)
+                return true;
+
+            var now = DateTime.UtcNow;
+            if (user.PasswordResetRequestedAt.HasValue && user.PasswordResetRequestedAt.Value > now.AddMinutes(-1))
+                return true;
+
+            var rawToken = GenerateUrlSafeToken();
+            user.PasswordResetTokenHash = HashToken(rawToken);
+            user.PasswordResetTokenExpiry = now.AddMinutes(15);
+            user.PasswordResetRequestedAt = now;
+
+            await _context.SaveChangesAsync();
+
+            // TODO: send token over email provider. Never return the token in the API response.
+            Console.WriteLine($"Password reset token for {user.Email}: {rawToken}");
+            return true;
+        }
+
+        public async Task<bool> ResetPasswordAsync(ResetPasswordRequestDto dto)
+        {
+            if (dto == null || string.IsNullOrWhiteSpace(dto.Token) || string.IsNullOrWhiteSpace(dto.NewPassword))
+                return false;
+
+            if (!IsStrongPassword(dto.NewPassword))
+                return false;
+
+            var hashedToken = HashToken(dto.Token.Trim());
+            var user = await _context.Users.FirstOrDefaultAsync(u =>
+                u.PasswordResetTokenHash == hashedToken &&
+                u.PasswordResetTokenExpiry.HasValue &&
+                u.PasswordResetTokenExpiry > DateTime.UtcNow &&
+                u.IsActive);
+
+            if (user == null)
+                return false;
+
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+            user.PasswordResetTokenHash = null;
+            user.PasswordResetTokenExpiry = null;
+            user.PasswordResetRequestedAt = null;
+            user.RefreshToken = null;
+            user.RefreshTokenExpiry = null;
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
         private string GenerateRefreshToken()
         {
             var randomNumber = new byte[64];
             using var rng = RandomNumberGenerator.Create();
             rng.GetBytes(randomNumber);
             return Convert.ToBase64String(randomNumber);
+        }
+
+
+        private static string GenerateUrlSafeToken()
+        {
+            var bytes = RandomNumberGenerator.GetBytes(32);
+            return Convert.ToBase64String(bytes).Replace("+", "-").Replace("/", "_").TrimEnd('=');
+        }
+
+        private static string HashToken(string token)
+        {
+            var tokenBytes = System.Text.Encoding.UTF8.GetBytes(token);
+            var hashBytes = SHA256.HashData(tokenBytes);
+            return Convert.ToHexString(hashBytes);
+        }
+
+        private static bool IsStrongPassword(string password)
+        {
+            if (password.Length < 8) return false;
+            var hasUpper = password.Any(char.IsUpper);
+            var hasLower = password.Any(char.IsLower);
+            var hasDigit = password.Any(char.IsDigit);
+            var hasSpecial = password.Any(c => !char.IsLetterOrDigit(c));
+
+            return hasUpper && hasLower && hasDigit && hasSpecial;
         }
 
         public async Task<IEnumerable<GetUserDto>> GetAllUsersAsync()

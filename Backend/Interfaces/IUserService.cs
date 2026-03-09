@@ -16,9 +16,8 @@ namespace GYMIND.API.Interfaces
         Task<TokenExchangeRequestDto?> LoginAsync(LoginRequestDto dto);
         Task<bool> UpdateProfileAsync(Guid userId, EditProfileDto dto);
         Task<TokenExchangeRequestDto?> RefreshTokenAsync(string token, string refeshToken);
-
-        
-
+        Task<bool> RequestPasswordResetAsync(string email);
+        Task<bool> ResetPasswordAsync(ResetPasswordRequestDto dto);
 
     }
 }

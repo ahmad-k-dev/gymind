@@ -29,6 +29,11 @@ public class User
     // tokens
     public string? RefreshToken { get; set; }
     public DateTime? RefreshTokenExpiry { get; set; }
+    public string? PasswordResetTokenHash { get; set; }
+    public DateTime? PasswordResetTokenExpiry { get; set; }
+    public DateTime? PasswordResetRequestedAt { get; set; }
+    public decimal? Height { get; set; }
+    public decimal? Weight { get; set; }
     [NotMapped]
     public object? Membership { get; set; }
 
