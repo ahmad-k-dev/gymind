@@ -12,11 +12,13 @@ namespace GYMIND.API.Controllers
     {
         private readonly IUserService _userService;
         private readonly ILogger<AuthController> _logger;
+        private readonly IWebHostEnvironment _environment;
 
-        public AuthController(IUserService userService, ILogger<AuthController> logger)
+        public AuthController(IUserService userService, ILogger<AuthController> logger, IWebHostEnvironment environment)
         {
             _userService = userService;
             _logger = logger;
+            _environment = environment;
         }
 
         [HttpPost("login")]
@@ -58,7 +60,11 @@ namespace GYMIND.API.Controllers
             if (dto == null || string.IsNullOrWhiteSpace(dto.Email))
                 return BadRequest("Email is required.");
 
-            await _userService.RequestPasswordResetAsync(dto.Email);
+            var resetToken = await _userService.RequestPasswordResetAsync(dto.Email);
+
+            if (_environment.IsDevelopment() && !string.IsNullOrWhiteSpace(resetToken))
+                return Ok(new { message = "If an account exists for this email, a reset link has been sent.", developmentResetToken = resetToken });
+
             return Ok(new { message = "If an account exists for this email, a reset link has been sent." });
         }
 
