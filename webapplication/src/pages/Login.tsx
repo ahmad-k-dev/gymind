@@ -54,7 +54,13 @@ const Login = () => {
 
       if (!response.ok) throw new Error("Could not request password reset.");
       const payload = await response.json();
-      setMessage(payload.message ?? "If an account exists, a reset link was sent.");
+      const devToken = payload.developmentResetToken as string | undefined;
+      if (devToken) {
+        setToken(devToken);
+        setMessage("Development mode: reset token auto-filled below. Use it to complete reset.");
+      } else {
+        setMessage(payload.message ?? "If an account exists, a reset link was sent.");
+      }
       setMode("reset");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Request failed.");

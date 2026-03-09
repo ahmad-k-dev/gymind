@@ -98,30 +98,26 @@ namespace GYMIND.API.Service
         }
 
 
-        public async Task<bool> RequestPasswordResetAsync(string email)
+        public async Task<string?> RequestPasswordResetAsync(string email)
         {
             if (string.IsNullOrWhiteSpace(email))
-                return true;
+                return null;
 
             var normalizedEmail = email.Trim().ToLowerInvariant();
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail && u.IsActive);
             if (user == null)
-                return true;
-
-            var now = DateTime.UtcNow;
-            if (user.PasswordResetRequestedAt.HasValue && user.PasswordResetRequestedAt.Value > now.AddMinutes(-1))
-                return true;
+                return null;
 
             var rawToken = GenerateUrlSafeToken();
-            user.PasswordResetTokenHash = HashToken(rawToken);
-            user.PasswordResetTokenExpiry = now.AddMinutes(15);
-            user.PasswordResetRequestedAt = now;
+            var hashedToken = HashToken(rawToken);
+            user.RefreshToken = $"pwdreset:{hashedToken}";
+            user.RefreshTokenExpiry = DateTime.UtcNow.AddMinutes(15);
 
             await _context.SaveChangesAsync();
 
-            // TODO: send token over email provider. Never return the token in the API response.
+            // TODO: replace with real email provider integration.
             Console.WriteLine($"Password reset token for {user.Email}: {rawToken}");
-            return true;
+            return rawToken;
         }
 
         public async Task<bool> ResetPasswordAsync(ResetPasswordRequestDto dto)
@@ -133,19 +129,17 @@ namespace GYMIND.API.Service
                 return false;
 
             var hashedToken = HashToken(dto.Token.Trim());
+            var expectedValue = $"pwdreset:{hashedToken}";
             var user = await _context.Users.FirstOrDefaultAsync(u =>
-                u.PasswordResetTokenHash == hashedToken &&
-                u.PasswordResetTokenExpiry.HasValue &&
-                u.PasswordResetTokenExpiry > DateTime.UtcNow &&
+                u.RefreshToken == expectedValue &&
+                u.RefreshTokenExpiry.HasValue &&
+                u.RefreshTokenExpiry > DateTime.UtcNow &&
                 u.IsActive);
 
             if (user == null)
                 return false;
 
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
-            user.PasswordResetTokenHash = null;
-            user.PasswordResetTokenExpiry = null;
-            user.PasswordResetRequestedAt = null;
             user.RefreshToken = null;
             user.RefreshTokenExpiry = null;
 
